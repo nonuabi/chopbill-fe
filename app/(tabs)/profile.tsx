@@ -1,3 +1,4 @@
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useState } from "react";
@@ -16,7 +17,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import Header from "../components/Header";
 import ProfileAvatar from "../components/ProfileAvtar";
 import { colors } from "../styles/colors";
 import { common } from "../styles/common";
@@ -142,7 +142,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={[common.safeViewContainer]}>
-        <Header />
+        {/* <Header /> */}
         <ScrollView contentContainerStyle={[common.container]}>
           <View style={[common.card, { padding: 24, marginBottom: 24 }]}>
             <View
@@ -161,8 +161,15 @@ export default function ProfileScreen() {
                 <Text style={styles.muted}>{user?.email || ""}</Text>
               </View>
             </View>
-            <Pressable onPress={openEdit}>
-              <Text>Edit</Text>
+            <Pressable
+              onPress={openEdit}
+              style={({ pressed }) => [
+                {
+                  backgroundColor: pressed ? "rgba(44, 49, 55, 0.13)" : "white",
+                },
+              ]}
+            >
+              <FontAwesome name="edit" size={24} color="black" />
             </Pressable>
             <Modal
               visible={isEditOpen}
@@ -193,6 +200,7 @@ export default function ProfileScreen() {
                           value={name}
                           onChangeText={setName}
                           editable={!saving}
+                          placeholderTextColor="#9CA3AF"
                         />
 
                         <Text style={styles.label}>Email</Text>
@@ -204,6 +212,7 @@ export default function ProfileScreen() {
                           value={email}
                           onChangeText={setEmail}
                           editable={!saving}
+                          placeholderTextColor="#9CA3AF"
                         />
 
                         <View style={styles.row}>

@@ -31,6 +31,7 @@ const FormInput = ({
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
         style={form.input}
+        placeholderTextColor="#9CA3AF"
       />
     </View>
   );

@@ -10,7 +10,6 @@ import {
 import DropDownPicker from "react-native-dropdown-picker";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import FormInput from "../components/FormInput";
-import Header from "../components/Header";
 import { common } from "../styles/common";
 export default function ExpensesScreen() {
   const [title, setTitle] = useState("");
@@ -36,7 +35,7 @@ export default function ExpensesScreen() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={[common.safeViewContainer]}>
-        <Header />
+        {/* <Header /> */}
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === "ios" ? "padding" : "height"}

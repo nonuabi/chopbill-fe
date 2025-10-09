@@ -1,6 +1,6 @@
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import Header from "../components/Header";
 import ListCard from "../components/ListCard";
 import { colors } from "../styles/colors";
 import { common } from "../styles/common";
@@ -64,16 +64,42 @@ export default function HomeScreen() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={[common.safeViewContainer]}>
-        <Header />
+        {/* <Header /> */}
         <ScrollView contentContainerStyle={[common.container]}>
           <View style={styles.statsContainer}>
             <View style={styles.owedCard}>
-              <Text style={styles.cardTitle}>You are owed</Text>
-              <Text style={styles.OwedCardValue}>₹780</Text>
+              <View
+                style={{
+                  marginRight: 10,
+                }}
+              >
+                <FontAwesome
+                  name="angle-double-up"
+                  size={24}
+                  color={colors.green}
+                />
+              </View>
+              <View>
+                <Text style={styles.cardTitle}>You are owed</Text>
+                <Text style={styles.OwedCardValue}>₹780</Text>
+              </View>
             </View>
             <View style={styles.OweCard}>
-              <Text style={styles.cardTitle}>You owe</Text>
-              <Text style={styles.OweCardValue}>₹230</Text>
+              <View
+                style={{
+                  marginRight: 10,
+                }}
+              >
+                <FontAwesome
+                  name="angle-double-down"
+                  size={24}
+                  color={colors.danger}
+                />
+              </View>
+              <View>
+                <Text style={styles.cardTitle}>You owe</Text>
+                <Text style={styles.OweCardValue}>₹230</Text>
+              </View>
             </View>
           </View>
 
@@ -149,6 +175,8 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#F0FDF4",
     width: "48%",
+    flexDirection: "row",
+    alignItems: "center",
   },
   OweCard: {
     borderWidth: 1,
@@ -157,6 +185,8 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#FEF2F2",
     width: "48%",
+    flexDirection: "row",
+    alignItems: "center",
   },
   cardTitle: {
     fontFamily: "sans-serif",

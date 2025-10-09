@@ -24,6 +24,7 @@ const Dropdown = ({ lable, value, onChange, options }: DropdownProps) => {
         }
         placeholder="Select"
         editable={false}
+        placeholderTextColor="#9CA3AF"
       />
     </View>
   );

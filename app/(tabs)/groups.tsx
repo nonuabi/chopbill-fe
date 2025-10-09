@@ -15,7 +15,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import Header from "../components/Header";
 import { common } from "../styles/common";
 
 export default function GroupsScreen() {
@@ -142,7 +141,7 @@ export default function GroupsScreen() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={[common.safeViewContainer]}>
-        <Header />
+        {/* <Header /> */}
         <ScrollView contentContainerStyle={[common.container]}>
           <View>
             <View

@@ -86,6 +86,7 @@ export default function SignupScreen() {
               placeholder="Full Name"
               style={[authStyles.input]}
               textContentType="name"
+              placeholderTextColor="#9CA3AF"
             />
 
             <Text style={styles.label}>Email</Text>
@@ -98,6 +99,7 @@ export default function SignupScreen() {
               placeholder="you@example.com"
               style={[authStyles.input, !!errors.email && styles.inputError]}
               textContentType="emailAddress"
+              placeholderTextColor="#9CA3AF"
             />
             {!!errors.email && <Text style={styles.error}>{errors.email}</Text>}
 
@@ -114,6 +116,7 @@ export default function SignupScreen() {
                   !!errors.password && styles.inputError,
                 ]}
                 textContentType="newPassword"
+                placeholderTextColor="#9CA3AF"
               />
               <Pressable
                 style={styles.eyeBtn}
@@ -136,6 +139,7 @@ export default function SignupScreen() {
               placeholder="••••••••"
               style={[authStyles.input, !!errors.confirm && styles.inputError]}
               textContentType="newPassword"
+              placeholderTextColor="#9CA3AF"
             />
             {!!errors.confirm && (
               <Text style={styles.error}>{errors.confirm}</Text>
