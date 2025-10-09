@@ -244,10 +244,11 @@ export default function ProfileScreen() {
               </TouchableWithoutFeedback>
             </Modal>
           </View>
-
+          {/* TODO */}
+          {/* 
           <Pressable style={[common.card, { padding: 24, marginBottom: 12 }]}>
             <Text>Invite Friends to ShareFare</Text>
-          </Pressable>
+          </Pressable> */}
 
           <Pressable style={[common.card, { padding: 24 }]} onPress={logout}>
             <Text

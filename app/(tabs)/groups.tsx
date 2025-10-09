@@ -1,3 +1,5 @@
+import AntDesign from "@expo/vector-icons/AntDesign";
+import Feather from "@expo/vector-icons/Feather";
 import { useState } from "react";
 import {
   Alert,
@@ -15,57 +17,42 @@ import {
   View,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { colors } from "../styles/colors";
 import { common } from "../styles/common";
 
 export default function GroupsScreen() {
   const [groups, setGroups] = useState<
-    { id: string; name: string; description?: string }[]
+    {
+      id: string;
+      name: string;
+      description?: string;
+      members?: { id?: string; email: string; name?: string }[];
+      totalAmount?: number; // sum of expenses in this group
+      balanceForMe?: number; // +ve: others owe you; -ve: you owe
+    }[]
   >([
     {
       id: "group_1",
-      name: "rome",
-      description: "des testing",
+      name: "Rome",
+      description: "Friends euro trip",
+      members: [
+        { id: "1", name: "You", email: "me@sharefare.app" },
+        { id: "2", name: "Alex", email: "alex@test.com" },
+        { id: "3", name: "Priya", email: "priya@test.com" },
+      ],
+      totalAmount: 12450,
+      balanceForMe: 1800, // others owe you
     },
     {
       id: "group_2",
-      name: "rome 2",
-      description: "des testing",
-    },
-    {
-      id: "group_3",
-      name: "rome 2",
-      description: "des testing",
-    },
-    {
-      id: "group_4",
-      name: "rome 2",
-      description: "des testing",
-    },
-    {
-      id: "group_5",
-      name: "rome 2",
-      description: "des testing",
-    },
-    {
-      id: "group_6",
-      name: "rome 2",
-      description: "des testing",
-    },
-    {
-      id: "group_7",
-      name: "rome 2",
-    },
-    {
-      id: "group_8",
-      name: "rome 2",
-    },
-    {
-      id: "group_9",
-      name: "rome 2",
-    },
-    {
-      id: "group_10",
-      name: "rome 2",
+      name: "Flat Mates",
+      description: "Monthly utilities",
+      members: [
+        { id: "1", name: "You", email: "me@sharefare.app" },
+        { id: "4", name: "Ravi", email: "ravi@test.com" },
+      ],
+      totalAmount: 5600,
+      balanceForMe: -700, // you owe
     },
   ]);
 
@@ -78,7 +65,10 @@ export default function GroupsScreen() {
       email: "test@test.com",
     },
   ]);
+  const currentUserEmail = "me@sharefare.app"; // TODO: replace with real auth user email
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [activeGroup, setActiveGroup] = useState<any>(null);
   const [groupName, setGroupName] = useState("");
   const [groupdesciption, setGroupDiscription] = useState("");
 
@@ -124,11 +114,13 @@ export default function GroupsScreen() {
       return;
     }
     const newGroup = {
-      id: Date.now().toString(),
+      id: "",
       name: groupName.trim(),
       description: groupdesciption.trim() || undefined,
       members: selectedMembers,
-    } as any;
+      totalAmount: 0,
+      balanceForMe: 0,
+    } as const;
     console.log("new group => ", newGroup);
     setGroups((prev) => [newGroup, ...prev]);
     setGroupName("");
@@ -136,6 +128,15 @@ export default function GroupsScreen() {
     setSelectedMembers([]);
     setMemberQuery("");
     setIsModalOpen(false);
+  };
+
+  const openDetails = (group: any) => {
+    setActiveGroup(group);
+    setIsDetailsOpen(true);
+  };
+  const closeDetails = () => {
+    setIsDetailsOpen(false);
+    setActiveGroup(null);
   };
 
   return (
@@ -174,22 +175,76 @@ export default function GroupsScreen() {
               <FlatList
                 data={groups}
                 keyExtractor={(g) => g.id}
-                renderItem={({ item }) => (
-                  <View style={styles.item}>
-                    <Text style={{ fontSize: 16, fontWeight: "600" }}>
-                      {item.name}
-                    </Text>
-                    {item?.description && (
-                      <Text style={styles.muted}>{item.description}</Text>
-                    )}
-                    {Array.isArray((item as any).members) && (
-                      <Text style={[styles.muted, { marginTop: 6 }]}>
-                        {(item as any).members.length} member
-                        {((item as any).members.length || 0) === 1 ? "" : "s"}
-                      </Text>
-                    )}
-                  </View>
-                )}
+                renderItem={({ item }) => {
+                  const total = item.totalAmount ?? 0;
+                  const membersCount = Array.isArray(item.members)
+                    ? item.members.length
+                    : 0;
+                  const bal = item.balanceForMe ?? 0;
+                  const owesLabel =
+                    bal > 0 ? `₹ ${Math.abs(bal)}` : `₹ ${Math.abs(bal)}`;
+
+                  return (
+                    <Pressable
+                      onPress={() => openDetails(item)}
+                      android_ripple={{ color: "#E5E7EB" }}
+                      style={({ pressed }) => [pressed && styles.itemPressed]}
+                    >
+                      <View style={styles.item}>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            marginBottom: 12,
+                          }}
+                        >
+                          <View>
+                            <Text style={{ fontSize: 16, fontWeight: "600" }}>
+                              {item.name}
+                            </Text>
+                            {item?.description && (
+                              <Text style={styles.muted}>
+                                {item.description}
+                              </Text>
+                            )}
+                          </View>
+
+                          <View style={{ alignItems: "flex-end" }}>
+                            <Text
+                              style={[
+                                bal > 0
+                                  ? styles.OwedCardValue
+                                  : styles.OweCardValue,
+                              ]}
+                            >
+                              {owesLabel}
+                            </Text>
+                            <Text style={styles.cardTitle}>your balance</Text>
+                          </View>
+                        </View>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                            }}
+                          >
+                            <Feather name="users" size={13} color="black" />
+                            <Text style={[styles.statText, { marginLeft: 5 }]}>
+                              {membersCount} members
+                            </Text>
+                          </View>
+                          <Text style={styles.statText}>₹ {total} total</Text>
+                        </View>
+                      </View>
+                    </Pressable>
+                  );
+                }}
                 scrollEnabled={false}
                 ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
               />
@@ -328,6 +383,112 @@ export default function GroupsScreen() {
             </View>
           </TouchableWithoutFeedback>
         </Modal>
+
+        <Modal
+          visible={isDetailsOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={closeDetails}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.overlay}>
+              <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+                style={{ width: "100%", alignItems: "center" }}
+              >
+                <View style={[styles.modalCard, { maxHeight: "85%" }]}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={styles.modalTitle}>
+                      {activeGroup?.name || "Group"}
+                    </Text>
+                    <Pressable onPress={closeDetails}>
+                      <AntDesign name="close" size={18} color="black" />
+                    </Pressable>
+                  </View>
+                  {activeGroup?.description ? (
+                    <Text style={styles.modalSubtitle}>
+                      {activeGroup.description}
+                    </Text>
+                  ) : null}
+
+                  {/* Balance summary */}
+                  <View style={{ marginTop: 6, marginBottom: 12 }}>
+                    <Text style={styles.cardTitle}>your balance</Text>
+                    <Text
+                      style={
+                        activeGroup?.balanceForMe > 0
+                          ? styles.OwedCardValue
+                          : styles.OweCardValue
+                      }
+                    >
+                      ₹ {Math.abs(activeGroup?.balanceForMe ?? 0)}
+                    </Text>
+                  </View>
+
+                  {/* Totals row */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      marginBottom: 12,
+                    }}
+                  >
+                    <Text style={styles.statText}>
+                      ₹ {activeGroup?.totalAmount ?? 0} total
+                    </Text>
+                    <Text style={styles.statText}>
+                      {Array.isArray(activeGroup?.members)
+                        ? activeGroup.members.length
+                        : 0}{" "}
+                      members
+                    </Text>
+                  </View>
+
+                  {/* Members list */}
+                  <Text style={[styles.label, { marginTop: 4 }]}>Members</Text>
+                  <ScrollView
+                    style={{ maxHeight: 240 }}
+                    keyboardShouldPersistTaps="handled"
+                  >
+                    {Array.isArray(activeGroup?.members) &&
+                    activeGroup.members.length > 0 ? (
+                      activeGroup.members.map((m: any) => (
+                        <View key={m.email} style={styles.memberRow}>
+                          <View style={styles.memberAvatar}>
+                            <Text style={styles.memberAvatarText}>
+                              {(
+                                m.name?.[0] ||
+                                m.email?.[0] ||
+                                "?"
+                              ).toUpperCase()}
+                            </Text>
+                          </View>
+                          <View style={{ marginLeft: 10 }}>
+                            <Text style={styles.resultName}>
+                              {m.name || m.email}
+                            </Text>
+                            {m.name ? (
+                              <Text style={styles.resultEmail}>{m.email}</Text>
+                            ) : null}
+                          </View>
+                        </View>
+                      ))
+                    ) : (
+                      <Text style={styles.resultEmptyText}>No members yet</Text>
+                    )}
+                  </ScrollView>
+                </View>
+              </KeyboardAvoidingView>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -433,5 +594,42 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 8,
+  },
+
+  statText: { color: "#0a0a0a", fontSize: 14, fontWeight: "500" },
+
+  cardTitle: {
+    fontFamily: "sans-serif",
+    color: "#717182",
+    fontSize: 14,
+  },
+  OwedCardValue: {
+    color: colors.green,
+    fontSize: 16,
+  },
+  OweCardValue: {
+    color: colors.danger,
+    fontSize: 16,
+  },
+  memberRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  memberAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  memberAvatarText: { fontWeight: "700", color: "#111827" },
+  itemPressed: {
+    opacity: 0.96,
+    transform: [{ scale: 0.995 }],
+    backgroundColor: "#F9FAFB",
   },
 });
