@@ -74,7 +74,7 @@ export default function SignupScreen() {
     <SafeAreaProvider>
       <SafeAreaView style={[common.safeViewContainer]}>
         <ScrollView contentContainerStyle={[common.container]}>
-          <View style={{ padding: 16 }}>
+          <View>
             <Text style={authStyles.brand}>Create account</Text>
 
             <Text>Full Name</Text>
@@ -97,11 +97,14 @@ export default function SignupScreen() {
               autoCorrect={false}
               keyboardType="email-address"
               placeholder="you@example.com"
-              style={[authStyles.input, !!errors.email && styles.inputError]}
+              style={[
+                authStyles.input,
+                //  !!errors.email && styles.inputError
+              ]}
               textContentType="emailAddress"
               placeholderTextColor="#9CA3AF"
             />
-            {!!errors.email && <Text style={styles.error}>{errors.email}</Text>}
+            {/* {!!errors.email && <Text style={styles.error}>{errors.email}</Text>} */}
 
             <Text style={[styles.label, { marginTop: 12 }]}>Password</Text>
             <View style={styles.row}>
@@ -113,7 +116,7 @@ export default function SignupScreen() {
                 style={[
                   authStyles.input,
                   styles.flex,
-                  !!errors.password && styles.inputError,
+                  // !!errors.password && styles.inputError,
                 ]}
                 textContentType="newPassword"
                 placeholderTextColor="#9CA3AF"
@@ -125,9 +128,9 @@ export default function SignupScreen() {
                 <Text>{showPassword ? "Hide" : "Show"}</Text>
               </Pressable>
             </View>
-            {!!errors.password && (
+            {/* {!!errors.password && (
               <Text style={styles.error}>{errors.password}</Text>
-            )}
+            )} */}
 
             <Text style={[styles.label, { marginTop: 12 }]}>
               Confirm password
@@ -137,13 +140,16 @@ export default function SignupScreen() {
               onChangeText={setConfirm}
               secureTextEntry={!showPassword}
               placeholder="••••••••"
-              style={[authStyles.input, !!errors.confirm && styles.inputError]}
+              style={[
+                authStyles.input,
+                //  !!errors.confirm && styles.inputError
+              ]}
               textContentType="newPassword"
               placeholderTextColor="#9CA3AF"
             />
-            {!!errors.confirm && (
+            {/* {!!errors.confirm && (
               <Text style={styles.error}>{errors.confirm}</Text>
-            )}
+            )} */}
 
             <Pressable
               onPress={onSubmit}

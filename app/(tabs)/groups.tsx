@@ -1,6 +1,8 @@
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
-import { useState } from "react";
+import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { useEffect, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -19,8 +21,14 @@ import {
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "../styles/colors";
 import { common } from "../styles/common";
+import { buildAuthHeader } from "../utils/auth";
+
+const TOKEN_KEY = "sf_token";
+const API_BASE =
+  process.env.EXPO_PUBLIC_API_URL || "https://sharefare-be.onrender.com";
 
 export default function GroupsScreen() {
+  const router = useRouter();
   const [groups, setGroups] = useState<
     {
       id: string;
@@ -30,31 +38,7 @@ export default function GroupsScreen() {
       totalAmount?: number; // sum of expenses in this group
       balanceForMe?: number; // +ve: others owe you; -ve: you owe
     }[]
-  >([
-    {
-      id: "group_1",
-      name: "Rome",
-      description: "Friends euro trip",
-      members: [
-        { id: "1", name: "You", email: "me@sharefare.app" },
-        { id: "2", name: "Alex", email: "alex@test.com" },
-        { id: "3", name: "Priya", email: "priya@test.com" },
-      ],
-      totalAmount: 12450,
-      balanceForMe: 1800, // others owe you
-    },
-    {
-      id: "group_2",
-      name: "Flat Mates",
-      description: "Monthly utilities",
-      members: [
-        { id: "1", name: "You", email: "me@sharefare.app" },
-        { id: "4", name: "Ravi", email: "ravi@test.com" },
-      ],
-      totalAmount: 5600,
-      balanceForMe: -700, // you owe
-    },
-  ]);
+  >([]);
 
   const [userList, setUserList] = useState<
     { id: string; name: string; email: string }[]
@@ -71,11 +55,42 @@ export default function GroupsScreen() {
   const [activeGroup, setActiveGroup] = useState<any>(null);
   const [groupName, setGroupName] = useState("");
   const [groupdesciption, setGroupDiscription] = useState("");
-
   const [memberQuery, setMemberQuery] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<
     { id?: string; email: string; name?: string; newUser?: boolean }[]
   >([]);
+
+  useEffect(() => {
+    const fetchUserGroups = async () => {
+      try {
+        const token = await SecureStore.getItemAsync(TOKEN_KEY);
+        if (!token) {
+          router.replace("/(auth)/LoginScreen");
+          return null;
+        }
+        const res = await fetch(`${API_BASE}/api/groups`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: buildAuthHeader(token),
+          },
+        });
+
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(txt || "Failed to fetch user groups");
+        }
+        console.log("groups res -> ", res);
+        const data = await res.json();
+        console.log("groups list -> ", data?.groups);
+        setGroups(data?.groups || []);
+      } catch (e: any) {
+        console.log("Error from fetching group list => ", e);
+        Alert.alert("failure", "Error while fetching group list!");
+      }
+    };
+    fetchUserGroups();
+  }, []);
 
   const normalized = (s: string) => s.trim().toLowerCase();
   const emailResults = userList.filter(
@@ -104,30 +119,58 @@ export default function GroupsScreen() {
     );
   };
 
-  const handleAddGroup = () => {
-    if (!groupName.trim()) {
-      Alert.alert("Validation", "Please enter a group name.");
-      return;
+  const handleAddGroup = async () => {
+    try {
+      if (!groupName.trim()) {
+        Alert.alert("Validation", "Please enter a group name.");
+        return;
+      }
+      if (selectedMembers.length === 0) {
+        Alert.alert("Validation", "Please add at least one member.");
+        return;
+      }
+      const newGroup = {
+        id: "",
+        name: groupName.trim(),
+        description: groupdesciption.trim() || undefined,
+        members: selectedMembers,
+        totalAmount: 0,
+        balanceForMe: 0,
+      } as const;
+      console.log("new group => ", newGroup);
+
+      const token = await SecureStore.getItemAsync(TOKEN_KEY);
+      if (!token) {
+        router.replace("/(auth)/LoginScreen");
+        return null;
+      }
+
+      const res = await fetch(`${API_BASE}/api/groups`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: buildAuthHeader(token),
+        },
+        body: JSON.stringify(newGroup),
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || "Failed to create a group");
+      }
+      const data = await res.json();
+      console.log("Create group res => ", data?.group);
+
+      setGroups((prev) => [...(prev || {}), data?.group]);
+      setGroupName("");
+      setGroupDiscription("");
+      setSelectedMembers([]);
+      setMemberQuery("");
+      setIsModalOpen(false);
+    } catch (e: any) {
+      console.log("Error while creating group -> ", e);
+      Alert.alert("Error", e?.message || "Could not creatae group!");
     }
-    if (selectedMembers.length === 0) {
-      Alert.alert("Validation", "Please add at least one member.");
-      return;
-    }
-    const newGroup = {
-      id: "",
-      name: groupName.trim(),
-      description: groupdesciption.trim() || undefined,
-      members: selectedMembers,
-      totalAmount: 0,
-      balanceForMe: 0,
-    } as const;
-    console.log("new group => ", newGroup);
-    setGroups((prev) => [newGroup, ...prev]);
-    setGroupName("");
-    setGroupDiscription("");
-    setSelectedMembers([]);
-    setMemberQuery("");
-    setIsModalOpen(false);
   };
 
   const openDetails = (group: any) => {
@@ -165,7 +208,7 @@ export default function GroupsScreen() {
               </Pressable>
             </View>
 
-            {groups.length === 0 ? (
+            {groups?.length === 0 ? (
               <>
                 <Text style={[styles.muted, { alignSelf: "center" }]}>
                   No groups yet. Create one to split expenses.
