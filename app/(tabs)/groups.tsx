@@ -89,7 +89,36 @@ export default function GroupsScreen() {
         Alert.alert("failure", "Error while fetching group list!");
       }
     };
+    const fetchUsers = async () => {
+      try {
+        const token = await SecureStore.getItemAsync(TOKEN_KEY);
+        if (!token) {
+          router.replace("/(auth)/LoginScreen");
+          return null;
+        }
+        const res = await fetch(`${API_BASE}/api/users`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: buildAuthHeader(token),
+          },
+        });
+
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(txt || "Failed to fetch user");
+        }
+        console.log("users res -> ", res);
+        const data = await res.json();
+        console.log("users list -> ", data?.users);
+        setUserList(data?.users || []);
+      } catch (e: any) {
+        console.log("Error from fetching users list => ", e);
+        Alert.alert("failure", "Error while fetching users list!");
+      }
+    };
     fetchUserGroups();
+    fetchUsers();
   }, []);
 
   const normalized = (s: string) => s.trim().toLowerCase();
