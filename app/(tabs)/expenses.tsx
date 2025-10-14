@@ -1,6 +1,7 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Keyboard,
@@ -40,7 +41,7 @@ export default function ExpensesScreen() {
 
   // Split between
   const [newMemberText, setNewMemberText] = useState("");
-  const [splitMembers, setSplitMembers] = useState<string[]>(["sarah", "mike"]);
+  const [splitMembers, setSplitMembers] = useState<string[]>([]);
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
@@ -58,49 +59,55 @@ export default function ExpensesScreen() {
     return e;
   }, [description, amount, group, paidBy, splitMembers]);
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadGoups = async () => {
-      try {
-        setGroupsLoading(true);
-        const token = await SecureStore.getItemAsync(TOKEN_KEY);
-        if (!token) {
-          router.replace("/(auth)/LoginScreen");
-          return null;
-        }
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      const loadGroups = async () => {
+        try {
+          setGroupsLoading(true);
+          const token = await SecureStore.getItemAsync(TOKEN_KEY);
+          if (!token) {
+            router.replace("/(auth)/LoginScreen");
+            return;
+          }
 
-        const res = await fetch(`${API_BASE}/api/groups`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: buildAuthHeader(token),
-          },
-        });
-        if (!res.ok) throw new Error(await res.text());
-        const data = await res.json();
-        console.log("data from groups -> ", data);
+          const res = await fetch(`${API_BASE}/api/groups`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: buildAuthHeader(token),
+            },
+          });
+          if (!res.ok) throw new Error(await res.text());
+          const data = await res.json();
+          console.log("data from groups -> ", data);
 
-        const items = (data?.groups ?? []).map(
-          (g: { id: number | string; name: string }) => ({
-            label: g.name,
-            value: String(g.id),
-          })
-        );
-        setGroups(items);
-      } catch (e: any) {
-        console.log("Error while fetching gropus -> ", e);
-        Alert.alert("error", "could not load groups");
-      } finally {
-        if (isMounted) {
-          setGroupsLoading(false);
+          const items = (data?.groups ?? []).map(
+            (g: { id: number | string; name: string }) => ({
+              label: g.name,
+              value: String(g.id),
+            })
+          );
+          if (isActive) {
+            setGroups(items);
+          }
+        } catch (e: any) {
+          console.log("Error while fetching groups -> ", e);
+          Alert.alert("error", "could not load groups");
+        } finally {
+          if (isActive) {
+            setGroupsLoading(false);
+          }
         }
-      }
-    };
-    loadGoups();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+      };
+
+      loadGroups();
+
+      return () => {
+        isActive = false;
+      };
+    }, [])
+  );
 
   useEffect(() => {
     console.log("set group value , call api -> ", group);
@@ -132,6 +139,10 @@ export default function ExpensesScreen() {
         })
       );
       setPeople(items);
+      // If user hasn't chosen any split members yet, default to all members
+      setSplitMembers((prev) =>
+        prev.length === 0 ? items.map((i) => i.value) : prev
+      );
       try {
       } catch (e: any) {
         console.log("Error while fetching group members -> ", e);
@@ -147,6 +158,15 @@ export default function ExpensesScreen() {
       isMounted = false;
     };
   }, [group]);
+
+  // Ensure the "paid by" user is shown in the "Split equally between" chips
+  useEffect(() => {
+    if (paidBy) {
+      setSplitMembers((prev) =>
+        prev.includes(paidBy) ? prev : [...prev, paidBy]
+      );
+    }
+  }, [paidBy]);
 
   const showError = (field: string) =>
     !!errors[field] && (touched[field] || touched.__submit);
@@ -308,7 +328,14 @@ export default function ExpensesScreen() {
                 )}
 
                 {/* Paid by */}
-                <Text style={[styles.labelMuted, { marginTop: 12 }]}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "500",
+                    marginBottom: 6,
+                    color: "#111827",
+                  }}
+                >
                   Paid by
                 </Text>
                 <View style={{ zIndex: 20, width: "100%" }}>
@@ -359,21 +386,22 @@ export default function ExpensesScreen() {
 
                 {/* Static people rows to match design */}
                 {people
-                  .filter((p) => p.value !== "me")
+                  .filter((p) => p.value !== paidBy)
                   .map((p) => (
-                    <View
+                    <Pressable
+                      onPress={() => toggleSplitMember(p.value)}
+                      hitSlop={8}
                       key={p.value}
-                      style={[
-                        styles.inputSurface,
-                        styles.rowBetween,
-                        styles.personRow,
-                      ]}
                     >
-                      <Text style={styles.personLabel}>{p.label}</Text>
-                      <Pressable
-                        onPress={() => toggleSplitMember(p.value)}
-                        hitSlop={8}
+                      <View
+                        style={[
+                          styles.inputSurface,
+                          styles.rowBetween,
+                          styles.personRow,
+                        ]}
                       >
+                        <Text style={styles.personLabel}>{p.label}</Text>
+
                         <View
                           style={[
                             styles.checkCircle,
@@ -385,12 +413,19 @@ export default function ExpensesScreen() {
                             <Text style={styles.checkIcon}>✓</Text>
                           )}
                         </View>
-                      </Pressable>
-                    </View>
+                      </View>
+                    </Pressable>
                   ))}
 
                 {/* Split equally chips */}
-                <Text style={[styles.labelMuted, { marginTop: 12 }]}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "500",
+                    marginBottom: 6,
+                    color: "#111827",
+                  }}
+                >
                   Split equally between:
                 </Text>
                 <View style={styles.chipsWrap}>

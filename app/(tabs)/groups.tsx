@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Keyboard,
@@ -34,7 +35,7 @@ export default function GroupsScreen() {
       id: string;
       name: string;
       description?: string;
-      members?: { id?: string; email: string; name?: string }[];
+      member_count: number;
       totalAmount?: number; // sum of expenses in this group
       balanceForMe?: number; // +ve: others owe you; -ve: you owe
     }[]
@@ -59,8 +60,10 @@ export default function GroupsScreen() {
   const [selectedMembers, setSelectedMembers] = useState<
     { id?: string; email: string; name?: string; newUser?: boolean }[]
   >([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchUserGroups = async () => {
       try {
         const token = await SecureStore.getItemAsync(TOKEN_KEY);
@@ -150,6 +153,7 @@ export default function GroupsScreen() {
 
   const handleAddGroup = async () => {
     try {
+      if (isSaving) return;
       if (!groupName.trim()) {
         Alert.alert("Validation", "Please enter a group name.");
         return;
@@ -158,6 +162,7 @@ export default function GroupsScreen() {
         Alert.alert("Validation", "Please add at least one member.");
         return;
       }
+      setIsSaving(true);
       const newGroup = {
         id: "",
         name: groupName.trim(),
@@ -190,7 +195,7 @@ export default function GroupsScreen() {
       const data = await res.json();
       console.log("Create group res => ", data?.group);
 
-      setGroups((prev) => [...(prev || {}), data?.group]);
+      setGroups((prev) => [data?.group, ...((prev as any) || [])]);
       setGroupName("");
       setGroupDiscription("");
       setSelectedMembers([]);
@@ -198,7 +203,9 @@ export default function GroupsScreen() {
       setIsModalOpen(false);
     } catch (e: any) {
       console.log("Error while creating group -> ", e);
-      Alert.alert("Error", e?.message || "Could not creatae group!");
+      Alert.alert("Error", e?.message || "Could not create group!");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -249,9 +256,6 @@ export default function GroupsScreen() {
                 keyExtractor={(g) => g.id}
                 renderItem={({ item }) => {
                   const total = item.totalAmount ?? 0;
-                  const membersCount = Array.isArray(item.members)
-                    ? item.members.length
-                    : 0;
                   const bal = item.balanceForMe ?? 0;
                   const owesLabel =
                     bal > 0 ? `₹ ${Math.abs(bal)}` : `₹ ${Math.abs(bal)}`;
@@ -308,7 +312,7 @@ export default function GroupsScreen() {
                           >
                             <Feather name="users" size={13} color="black" />
                             <Text style={[styles.statText, { marginLeft: 5 }]}>
-                              {membersCount} members
+                              {item?.member_count} members
                             </Text>
                           </View>
                           <Text style={styles.statText}>₹ {total} total</Text>
@@ -445,9 +449,27 @@ export default function GroupsScreen() {
                     </Pressable>
                     <Pressable
                       onPress={handleAddGroup}
-                      style={[styles.modalBtn, styles.btnPrimary]}
+                      disabled={isSaving}
+                      style={[
+                        styles.modalBtn,
+                        styles.btnPrimary,
+                        isSaving ? { opacity: 0.6 } : null,
+                      ]}
                     >
-                      <Text style={styles.btnTextPrimary}>Save</Text>
+                      {isSaving ? (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <ActivityIndicator size="small" />
+                          <Text style={styles.btnTextPrimary}>Saving…</Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.btnTextPrimary}>Save</Text>
+                      )}
                     </Pressable>
                   </View>
                 </View>

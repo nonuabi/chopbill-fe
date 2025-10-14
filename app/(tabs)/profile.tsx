@@ -114,12 +114,15 @@ export default function ProfileScreen() {
   };
 
   useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
     const fetchUser = async () => {
       try {
         const token = await SecureStore.getItemAsync(TOKEN_KEY);
         if (!token) {
-          router.replace("/(auth)/LoginScreen");
-          return null;
+          if (isMounted) router.replace("/(auth)/LoginScreen");
+          return;
         }
 
         const res = await fetch(`${API_BASE}/api/me`, {
@@ -128,16 +131,23 @@ export default function ProfileScreen() {
             "Content-Type": "application/json",
             Authorization: buildAuthHeader(token),
           },
+          signal: controller.signal,
         });
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
-        setUser(data?.data);
+        if (isMounted) setUser(data?.data);
       } catch (e: any) {
+        if (e?.name === "AbortError") return;
         console.log("profile error!", e);
       }
     };
+
     fetchUser();
-  }, [user]);
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, []);
 
   return (
     <SafeAreaProvider>
