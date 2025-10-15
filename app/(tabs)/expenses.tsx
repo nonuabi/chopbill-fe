@@ -141,7 +141,7 @@ export default function ExpensesScreen() {
       setPeople(items);
       // If user hasn't chosen any split members yet, default to all members
       setSplitMembers((prev) =>
-        prev.length === 0 ? items.map((i) => i.value) : prev
+        prev.length === 0 ? items.map((i: { value: any }) => i.value) : prev
       );
       try {
       } catch (e: any) {
@@ -177,17 +177,17 @@ export default function ExpensesScreen() {
     );
   };
 
-  const addNewSplitMember = () => {
-    const label = newMemberText.trim();
-    if (!label) return;
-    // create a synthetic value key
-    const key = label.toLowerCase().replace(/\s+/g, "_");
-    if (!people.find((p) => p.value === key)) {
-      setPeople((p) => [...p, { label, value: key }]);
-    }
-    if (!splitMembers.includes(key)) setSplitMembers((s) => [...s, key]);
-    setNewMemberText("");
-  };
+  // const addNewSplitMember = () => {
+  //   const label = newMemberText.trim();
+  //   if (!label) return;
+  //   // create a synthetic value key
+  //   const key = label.toLowerCase().replace(/\s+/g, "_");
+  //   if (!people.find((p) => p.value === key)) {
+  //     setPeople((p) => [...p, { label, value: key }]);
+  //   }
+  //   if (!splitMembers.includes(key)) setSplitMembers((s) => [...s, key]);
+  //   setNewMemberText("");
+  // };
 
   const handleSubmit = async () => {
     setTouched((t) => ({ ...t, __submit: true }));
@@ -206,12 +206,34 @@ export default function ExpensesScreen() {
       const payload = {
         description: description.trim(),
         amount: Number(amount),
-        groupId: group,
         paidBy,
         splitBetween: splitMembers,
-        notes: notes.trim() || undefined,
+        notes: notes.trim() || "",
       };
       console.log("POST /api/expenses ->", payload);
+
+      const token = await SecureStore.getItemAsync(TOKEN_KEY);
+      if (!token) {
+        router.replace("/(auth)/LoginScreen");
+        return null;
+      }
+      const res = await fetch(`${API_BASE}/api/groups/${group}/expenses`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: buildAuthHeader(token),
+        },
+        body: JSON.stringify({ expense: payload }),
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || "Failed to create a group");
+      }
+
+      const data = await res.json();
+      console.log("Create Expense res => ", data?.expense);
+
       Alert.alert("Success", "Expense created.");
       // reset
       setDescription("");
