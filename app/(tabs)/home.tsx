@@ -6,58 +6,20 @@ import { colors } from "../styles/colors";
 import { common } from "../styles/common";
 
 export default function HomeScreen() {
-  const outstandingList = [
-    {
-      id: "1",
-      avtar: "123",
-      name: "test 1",
-      amount: 1,
-      amountDirection: "-",
-    },
-    {
-      id: "2",
-      avtar: "123",
-      name: "Abhishek Verma",
-      amount: 2,
-      amountDirection: "+",
-    },
-    {
-      id: "3",
-      avtar: "123",
-      name: "Abhishek Verma",
-      amount: 2,
-      amountDirection: "+",
-    },
-    {
-      id: "4",
-      avtar: "123",
-      name: "Abhishek Verma",
-      amount: 2,
-      amountDirection: "+",
-    },
-    {
-      id: "5",
-      avtar: "123",
-      name: "",
-      amount: 3,
-      amountDirection: "-",
-    },
-  ];
+  const outstandingList: {
+    id: string;
+    avtar: string;
+    name: string;
+    amount: number;
+    amountDirection: string;
+  }[] = [];
 
-  const recentExpenses = [
-    {
-      id: "1",
-      name: "Dinner at Italian Restaurant",
-      groupName: "test",
-      amount: 120,
-    },
-    {
-      id: "2",
-      name: "Uber to Airport",
-      groupName: "Weekend trip",
-      amount: 20,
-    },
-  ];
+  const recentExpenses: {
+    id: string;
+    name: string;
+    groupName: string;
+    amount: number;
+  }[] = [];
 
   const MySeparator = () => <View style={{ height: 10 }} />;
 

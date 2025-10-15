@@ -43,13 +43,7 @@ export default function GroupsScreen() {
 
   const [userList, setUserList] = useState<
     { id: string; name: string; email: string }[]
-  >([
-    {
-      id: "1",
-      name: "test",
-      email: "test@test.com",
-    },
-  ]);
+  >([]);
   const currentUserEmail = "me@sharefare.app"; // TODO: replace with real auth user email
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -79,6 +73,11 @@ export default function GroupsScreen() {
           },
         });
 
+        if (res.status === 401 || res.status === 400) {
+          await SecureStore.deleteItemAsync(TOKEN_KEY);
+          router.replace("/(auth)/LoginScreen");
+        }
+
         if (!res.ok) {
           const txt = await res.text();
           throw new Error(txt || "Failed to fetch user groups");
@@ -106,6 +105,11 @@ export default function GroupsScreen() {
             Authorization: buildAuthHeader(token),
           },
         });
+
+        if (res.status === 401 || res.status === 400) {
+          await SecureStore.deleteItemAsync(TOKEN_KEY);
+          router.replace("/(auth)/LoginScreen");
+        }
 
         if (!res.ok) {
           const txt = await res.text();
@@ -185,8 +189,13 @@ export default function GroupsScreen() {
           "Content-Type": "application/json",
           Authorization: buildAuthHeader(token),
         },
-        body: JSON.stringify(newGroup),
+        body: JSON.stringify({ group: newGroup }),
       });
+
+      if (res.status === 401 || res.status === 400) {
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        router.replace("/(auth)/LoginScreen");
+      }
 
       if (!res.ok) {
         const txt = await res.text();

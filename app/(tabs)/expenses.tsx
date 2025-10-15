@@ -78,7 +78,14 @@ export default function ExpensesScreen() {
               Authorization: buildAuthHeader(token),
             },
           });
+
+          if (res.status === 401) {
+            await SecureStore.deleteItemAsync(TOKEN_KEY);
+            router.replace("/(auth)/LoginScreen");
+          }
+
           if (!res.ok) throw new Error(await res.text());
+
           const data = await res.json();
           console.log("data from groups -> ", data);
 
@@ -128,6 +135,12 @@ export default function ExpensesScreen() {
           Authorization: buildAuthHeader(token),
         },
       });
+
+      if (res.status === 401 || res.status === 400) {
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        router.replace("/(auth)/LoginScreen");
+      }
+
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       console.log("data from group members api -> ", data);
@@ -225,6 +238,11 @@ export default function ExpensesScreen() {
         },
         body: JSON.stringify({ expense: payload }),
       });
+
+      if (res.status === 401 || res.status === 400) {
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        router.replace("/(auth)/LoginScreen");
+      }
 
       if (!res.ok) {
         const txt = await res.text();

@@ -69,6 +69,11 @@ export default function ProfileScreen() {
         body: JSON.stringify({ name: name.trim(), email: email.trim() }),
       });
 
+      if (res.status === 401 || res.status === 400) {
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        router.replace("/(auth)/LoginScreen");
+      }
+
       if (!res.ok) {
         const txt = await res.text();
         throw new Error(txt || "Failed to update profile");
@@ -133,6 +138,12 @@ export default function ProfileScreen() {
           },
           signal: controller.signal,
         });
+
+        if (res.status === 401 || res.status === 400) {
+          await SecureStore.deleteItemAsync(TOKEN_KEY);
+          router.replace("/(auth)/LoginScreen");
+        }
+
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         if (isMounted) setUser(data?.data);
