@@ -22,8 +22,7 @@ import { colors } from "../styles/colors";
 import { common } from "../styles/common";
 
 const TOKEN_KEY = "sf_token";
-const API_BASE =
-  process.env.EXPO_PUBLIC_API_URL || "https://sharefare-be.onrender.com";
+const API_BASE = "http://10.0.2.2:3000";
 
 export default function ProfileScreen() {
   const router = useRouter();

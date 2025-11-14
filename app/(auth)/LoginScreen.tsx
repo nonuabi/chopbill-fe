@@ -17,8 +17,7 @@ import { colors } from "../styles/colors";
 import { common } from "../styles/common";
 import { authStyles } from "./styles";
 
-const API_BASE =
-  process.env.EXPO_PUBLIC_API_URL || "https://sharefare-be.onrender.com";
+const API_BASE = "http://10.0.2.2:3000";
 const TOKEN_KEY = "sf_token";
 
 const isEmail = (v: string) =>
@@ -48,19 +47,28 @@ export default function LoginScreen() {
     }
 
     setLoading(true);
+    console.log("login api request: ", email, password);
+    console.log("API_BASE: ", API_BASE);
     try {
       const res = await fetch(`${API_BASE}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user: { email: email.trim(), password } }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      console.log("login api response status: ", res.status);
+      console.log("login api response: ", res);
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.log("Error response: ", errorText);
+        throw new Error(errorText || `HTTP ${res.status}`);
+      }
       const data = await res.json();
       const token = data?.token;
       if (!token) throw new Error("Missing token in response");
       await SecureStore.setItemAsync(TOKEN_KEY, token);
       router.replace("/home");
     } catch (e: any) {
+      console.error("Login error: ", e);
       Alert.alert("Login failed", e?.message || "Something went wrong");
     } finally {
       setLoading(false);

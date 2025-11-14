@@ -1,4 +1,3 @@
-import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -20,13 +19,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { colors } from "../styles/colors";
-import { common } from "../styles/common";
-import { buildAuthHeader } from "../utils/auth";
+import { colors } from "../../styles/colors";
+import { common } from "../../styles/common";
+import { buildAuthHeader } from "../../utils/auth";
 
 const TOKEN_KEY = "sf_token";
-const API_BASE =
-  process.env.EXPO_PUBLIC_API_URL || "https://sharefare-be.onrender.com";
+const API_BASE = "http://10.0.2.2:3000";
 
 export default function GroupsScreen() {
   const router = useRouter();
@@ -46,8 +44,6 @@ export default function GroupsScreen() {
   >([]);
   const currentUserEmail = "me@sharefare.app"; // TODO: replace with real auth user email
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [activeGroup, setActiveGroup] = useState<any>(null);
   const [groupName, setGroupName] = useState("");
   const [groupdesciption, setGroupDiscription] = useState("");
   const [memberQuery, setMemberQuery] = useState("");
@@ -218,15 +214,6 @@ export default function GroupsScreen() {
     }
   };
 
-  const openDetails = (group: any) => {
-    setActiveGroup(group);
-    setIsDetailsOpen(true);
-  };
-  const closeDetails = () => {
-    setIsDetailsOpen(false);
-    setActiveGroup(null);
-  };
-
   return (
     <SafeAreaProvider>
       <SafeAreaView style={[common.safeViewContainer]}>
@@ -271,7 +258,7 @@ export default function GroupsScreen() {
 
                   return (
                     <Pressable
-                      onPress={() => openDetails(item)}
+                      onPress={() => router.push(`/(tabs)/groups/${item.id}`)}
                       android_ripple={{ color: "#E5E7EB" }}
                       style={({ pressed }) => [pressed && styles.itemPressed]}
                     >
@@ -481,112 +468,6 @@ export default function GroupsScreen() {
                       )}
                     </Pressable>
                   </View>
-                </View>
-              </KeyboardAvoidingView>
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
-
-        <Modal
-          visible={isDetailsOpen}
-          transparent
-          animationType="fade"
-          onRequestClose={closeDetails}
-        >
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.overlay}>
-              <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
-                keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
-                style={{ width: "100%", alignItems: "center" }}
-              >
-                <View style={[styles.modalCard, { maxHeight: "85%" }]}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text style={styles.modalTitle}>
-                      {activeGroup?.name || "Group"}
-                    </Text>
-                    <Pressable onPress={closeDetails}>
-                      <AntDesign name="close" size={18} color="black" />
-                    </Pressable>
-                  </View>
-                  {activeGroup?.description ? (
-                    <Text style={styles.modalSubtitle}>
-                      {activeGroup.description}
-                    </Text>
-                  ) : null}
-
-                  {/* Balance summary */}
-                  <View style={{ marginTop: 6, marginBottom: 12 }}>
-                    <Text style={styles.cardTitle}>your balance</Text>
-                    <Text
-                      style={
-                        activeGroup?.balanceForMe > 0
-                          ? styles.OwedCardValue
-                          : styles.OweCardValue
-                      }
-                    >
-                      ₹ {Math.abs(activeGroup?.balanceForMe ?? 0)}
-                    </Text>
-                  </View>
-
-                  {/* Totals row */}
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      marginBottom: 12,
-                    }}
-                  >
-                    <Text style={styles.statText}>
-                      ₹ {activeGroup?.totalAmount ?? 0} total
-                    </Text>
-                    <Text style={styles.statText}>
-                      {Array.isArray(activeGroup?.members)
-                        ? activeGroup.members.length
-                        : 0}{" "}
-                      members
-                    </Text>
-                  </View>
-
-                  {/* Members list */}
-                  <Text style={[styles.label, { marginTop: 4 }]}>Members</Text>
-                  <ScrollView
-                    style={{ maxHeight: 240 }}
-                    keyboardShouldPersistTaps="handled"
-                  >
-                    {Array.isArray(activeGroup?.members) &&
-                    activeGroup.members.length > 0 ? (
-                      activeGroup.members.map((m: any) => (
-                        <View key={m.email} style={styles.memberRow}>
-                          <View style={styles.memberAvatar}>
-                            <Text style={styles.memberAvatarText}>
-                              {(
-                                m.name?.[0] ||
-                                m.email?.[0] ||
-                                "?"
-                              ).toUpperCase()}
-                            </Text>
-                          </View>
-                          <View style={{ marginLeft: 10 }}>
-                            <Text style={styles.resultName}>
-                              {m.name || m.email}
-                            </Text>
-                            {m.name ? (
-                              <Text style={styles.resultEmail}>{m.email}</Text>
-                            ) : null}
-                          </View>
-                        </View>
-                      ))
-                    ) : (
-                      <Text style={styles.resultEmptyText}>No members yet</Text>
-                    )}
-                  </ScrollView>
                 </View>
               </KeyboardAvoidingView>
             </View>

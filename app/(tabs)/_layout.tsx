@@ -4,8 +4,7 @@ import * as SecureStore from "expo-secure-store";
 import { useEffect } from "react";
 
 const TOKEN_KEY = "sf_token";
-const API_BASE =
-  process.env.EXPO_PUBLIC_API_URL || "https://sharefare-be.onrender.com";
+const API_BASE = "http://10.0.2.2:3000";
 
 export default function TabsLayout() {
   const router = useRouter();
@@ -28,6 +27,7 @@ export default function TabsLayout() {
 
         if (res.status === 401 || res.status === 400) {
           await SecureStore.deleteItemAsync(TOKEN_KEY);
+          router.replace("/(auth)/LoginScreen");
           return;
         }
       } catch (e: any) {
@@ -50,7 +50,8 @@ export default function TabsLayout() {
             groups: "people-outline",
             profile: "person-circle-outline",
           };
-          const name = map[route.name] || "ellipse-outline";
+          const routeBase = route.name.split("/")[0];
+          const name = map[routeBase] || "ellipse-outline";
           return <Ionicons name={name} size={size} color={color} />;
         },
         tabBarLabelStyle: { fontSize: 12, marginBottom: 0 },
@@ -59,7 +60,11 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="home" options={{ title: "Dashboard" }} />
       <Tabs.Screen name="expenses" options={{ title: "Expenses" }} />
-      <Tabs.Screen name="groups" options={{ title: "Groups" }} />
+      <Tabs.Screen name="groups/index" options={{ title: "Groups" }} />
+      <Tabs.Screen
+        name="groups/[id]"
+        options={{ href: null, headerShown: false }}
+      />
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
     </Tabs>
   );
