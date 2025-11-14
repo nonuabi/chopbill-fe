@@ -229,23 +229,42 @@ export default function GroupsScreen() {
                 marginBottom: 24,
               }}
             >
-              <Text style={styles.title}>Your Groups</Text>
+              <View>
+                <Text style={styles.title}>Your Groups</Text>
+                <Text style={styles.subtitle}>
+                  {groups.length} {groups.length === 1 ? "group" : "groups"}
+                </Text>
+              </View>
               <Pressable
                 style={styles.btn}
                 onPress={() => {
                   setIsModalOpen(true);
                 }}
               >
-                <Text style={styles.btnText}>Create Group</Text>
+                <Feather name="plus" size={18} color="#fff" />
+                <Text style={styles.btnText}>Create</Text>
               </Pressable>
             </View>
 
             {groups?.length === 0 ? (
-              <>
-                <Text style={[styles.muted, { alignSelf: "center" }]}>
-                  No groups yet. Create one to split expenses.
-                </Text>
-              </>
+              <View style={styles.emptyStateContainer}>
+                <View style={styles.emptyState}>
+                  <View style={styles.emptyStateIcon}>
+                    <Feather name="users" size={64} color="#D1D5DB" />
+                  </View>
+                  <Text style={styles.emptyStateTitle}>No groups yet</Text>
+                  <Text style={styles.emptyStateText}>
+                    Create your first group to start splitting expenses with friends and family.
+                  </Text>
+                  <Pressable
+                    style={styles.emptyStateButton}
+                    onPress={() => setIsModalOpen(true)}
+                  >
+                    <Feather name="plus" size={18} color="#fff" />
+                    <Text style={styles.emptyStateButtonText}>Create Group</Text>
+                  </Pressable>
+                </View>
+              </View>
             ) : (
               <FlatList
                 data={groups}
@@ -480,26 +499,88 @@ export default function GroupsScreen() {
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: 16,
-    fontWeight: 500,
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 4,
   },
   muted: { opacity: 0.7, marginTop: 2 },
   btn: {
     backgroundColor: "#111827",
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 10,
     alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  btnText: { color: "#fff", fontWeight: "600" },
+  btnText: { color: "#fff", fontWeight: "600", fontSize: 14 },
   item: {
-    padding: 14,
+    padding: 16,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 10,
+    borderColor: "#E5E7EB",
+    borderRadius: 14,
     backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  itemPressed: {
+    opacity: 0.95,
+    transform: [{ scale: 0.98 }],
   },
   itemText: { fontSize: 16, fontWeight: "500", color: "#111827" },
+  emptyStateContainer: {
+    marginTop: 40,
+  },
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
+  emptyStateIcon: {
+    marginBottom: 24,
+    opacity: 0.5,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: "#6B7280",
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  emptyStateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    gap: 8,
+  },
+  emptyStateButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
 
   // Modal styles
   overlay: {

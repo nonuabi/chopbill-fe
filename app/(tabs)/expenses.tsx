@@ -326,7 +326,12 @@ export default function ExpensesScreen() {
               keyboardShouldPersistTaps="handled"
             >
               <View style={styles.headerRow}>
-                <Text style={styles.header}>Add New Expense</Text>
+                <View>
+                  <Text style={styles.header}>Add New Expense</Text>
+                  <Text style={styles.headerSubtitle}>
+                    Track and split expenses with your group
+                  </Text>
+                </View>
                 {groupParam && (
                   <Pressable
                     onPress={() => router.back()}
@@ -566,24 +571,29 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
+    alignItems: "flex-start",
+    marginBottom: 24,
   },
   header: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "700",
     color: "#111827",
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
   },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
   },
   closeBtnText: {
-    fontSize: 18,
+    fontSize: 20,
     color: "#6B7280",
     fontWeight: "600",
   },
@@ -594,6 +604,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   label: {
     fontSize: 14,
@@ -723,13 +738,19 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     marginTop: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   btnPressed: {
-    opacity: 0.9,
+    opacity: 0.95,
     transform: [{ scale: 0.98 }],
   },
   btnDisabled: {
     opacity: 0.6,
+    shadowOpacity: 0.05,
   },
   btnText: {
     color: "#fff",

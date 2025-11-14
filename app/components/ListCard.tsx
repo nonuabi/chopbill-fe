@@ -85,17 +85,23 @@ const ListCard: React.FC<ListCardProps> = ({
 const styles = StyleSheet.create({
   cardContainer: {
     borderWidth: 1,
-    borderColor: "#E6E8EC",
+    borderColor: "#E5E7EB",
     backgroundColor: "#FFFFFF",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 16,
     borderRadius: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   cardPressed: {
-    opacity: 0.9,
+    opacity: 0.95,
     transform: [{ scale: 0.98 }],
+    shadowOpacity: 0.1,
   },
   cardDisabled: {
     opacity: 0.5,
@@ -114,6 +120,8 @@ const styles = StyleSheet.create({
   },
   titleText: {
     fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
   },
   subtitleText: {
     marginTop: 2,
@@ -124,7 +132,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   amountText: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: "700",
   },
   amountPositive: {
     color: colors.green,
@@ -137,17 +146,19 @@ const styles = StyleSheet.create({
     color: "#717182",
   },
   moneyBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#E6E8EC",
-    backgroundColor: "#F7F7F9",
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F9FAFB",
   },
   moneyBadgeText: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.primary,
   },
 });
 
