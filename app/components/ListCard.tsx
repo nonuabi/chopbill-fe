@@ -13,6 +13,12 @@ interface ListCardProps {
   direction?: "+" | "-";
   /** For `expense` variant, small muted line under the title */
   subtitle?: string;
+  /** Optional email for better avatar color generation */
+  email?: string;
+  /** Avatar URL from backend */
+  avatarUrl?: string;
+  /** User ID for avatar generation */
+  userId?: number | string;
   onPress?: () => void;
   onLongPress?: () => void;
   disabled?: boolean;
@@ -24,6 +30,9 @@ const ListCard: React.FC<ListCardProps> = ({
   amount,
   direction,
   subtitle,
+  email,
+  avatarUrl,
+  userId,
   onPress,
   onLongPress,
   disabled,
@@ -47,7 +56,12 @@ const ListCard: React.FC<ListCardProps> = ({
     >
       <View style={styles.leftSection}>
         {variant === "balance" ? (
-          <ProfileAvatar fullName={name} />
+          <ProfileAvatar 
+            fullName={name} 
+            email={email} 
+            avatarUrl={avatarUrl}
+            userId={userId}
+          />
         ) : (
           <View style={styles.moneyBadge}>
             <Text style={styles.moneyBadgeText}>₹</Text>

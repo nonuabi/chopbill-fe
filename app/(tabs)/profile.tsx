@@ -171,7 +171,13 @@ export default function ProfileScreen() {
                 alignItems: "center",
               }}
             >
-              <ProfileAvatar fullName={user?.name || ""} />
+              <ProfileAvatar 
+                fullName={user?.name || user?.email || ""} 
+                email={user?.email}
+                avatarUrl={user?.avatar_url}
+                userId={user?.id}
+                size={80}
+              />
               <View
                 style={{
                   marginLeft: 10,

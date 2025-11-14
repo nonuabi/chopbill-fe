@@ -336,6 +336,9 @@ export default function HomeScreen() {
                     name={item.user.name || item.user.email}
                     amount={item.amount}
                     direction={item.direction}
+                    email={item.user.email}
+                    avatarUrl={item.user.avatar_url}
+                    userId={item.user.id}
                     onPress={() => {
                       router.push("/(tabs)/groups");
                     }}

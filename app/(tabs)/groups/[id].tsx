@@ -231,6 +231,9 @@ export default function GroupDetailsScreen() {
                           name={mb.user.name || mb.user.email}
                           amount={mb.owes_you}
                           direction="+"
+                          email={mb.user.email}
+                          avatarUrl={mb.user.avatar_url}
+                          userId={mb.user.id}
                           onPress={() => {
                             // Could navigate to settle up or member details
                           }}
@@ -252,6 +255,9 @@ export default function GroupDetailsScreen() {
                           name={mb.user.name || mb.user.email}
                           amount={mb.you_owe}
                           direction="-"
+                          email={mb.user.email}
+                          avatarUrl={mb.user.avatar_url}
+                          userId={mb.user.id}
                           onPress={() => {
                             // Could navigate to settle up
                           }}
@@ -307,8 +313,10 @@ export default function GroupDetailsScreen() {
                         >
                           <ProfileAvatar
                             fullName={member.name || member.email}
+                            email={member.email}
+                            avatarUrl={member.avatar_url}
+                            userId={member.id}
                             size={40}
-                            fontSize={14}
                           />
                           <View style={styles.memberInfo}>
                             <Text style={styles.memberName}>
