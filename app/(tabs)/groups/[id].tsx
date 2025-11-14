@@ -146,7 +146,7 @@ export default function GroupDetailsScreen() {
             {/* Header */}
             <View style={styles.headerRow}>
               <Pressable
-                onPress={() => router.back()}
+                onPress={() => router.push("/(tabs)/groups")}
                 hitSlop={8}
                 style={styles.backBtn}
               >
@@ -291,63 +291,40 @@ export default function GroupDetailsScreen() {
                   </View>
                 )}
 
-                {/* All Members List */}
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>All Members</Text>
-                  <View style={styles.card}>
-                    {group.members && group.members.length > 0 ? (
-                      group.members.map((member, idx) => {
-                        const memberBalance = memberBalances.find(
-                          (mb) => mb.user.id === member.id || mb.user.email === member.email
-                        );
-                        const balance = memberBalance?.balance ?? 0;
-                        return (
-                          <View
-                            key={member.id || member.email || idx}
-                            style={[
-                              styles.memberRow,
-                              idx < (group.members?.length ?? 0) - 1 &&
-                                styles.memberRowBorder,
-                            ]}
-                          >
-                            <ProfileAvatar
-                              fullName={member.name || member.email}
-                              size={40}
-                              fontSize={14}
-                            />
-                            <View style={styles.memberInfo}>
-                              <Text style={styles.memberName}>
-                                {member.name || member.email}
+                {/* All Members List - Only show settled members */}
+                {settledMembers.length > 0 && (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>All Members</Text>
+                    <View style={styles.card}>
+                      {settledMembers.map((member, idx) => (
+                        <View
+                          key={member.id || member.email || idx}
+                          style={[
+                            styles.memberRow,
+                            idx < settledMembers.length - 1 &&
+                              styles.memberRowBorder,
+                          ]}
+                        >
+                          <ProfileAvatar
+                            fullName={member.name || member.email}
+                            size={40}
+                            fontSize={14}
+                          />
+                          <View style={styles.memberInfo}>
+                            <Text style={styles.memberName}>
+                              {member.name || member.email}
+                            </Text>
+                            {member.name ? (
+                              <Text style={styles.memberEmail}>
+                                {member.email}
                               </Text>
-                              {member.name ? (
-                                <Text style={styles.memberEmail}>
-                                  {member.email}
-                                </Text>
-                              ) : null}
-                            </View>
-                            {balance !== 0 && (
-                              <View style={styles.memberBalance}>
-                                <Text
-                                  style={[
-                                    styles.memberBalanceText,
-                                    balance > 0
-                                      ? styles.memberBalancePositive
-                                      : styles.memberBalanceNegative,
-                                  ]}
-                                >
-                                  {balance > 0 ? "+" : ""}₹
-                                  {Math.abs(balance).toFixed(2)}
-                                </Text>
-                              </View>
-                            )}
+                            ) : null}
                           </View>
-                        );
-                      })
-                    ) : (
-                      <Text style={styles.muted}>No members yet</Text>
-                    )}
+                        </View>
+                      ))}
+                    </View>
                   </View>
-                </View>
+                )}
 
                 {/* Action Buttons */}
                 <View style={styles.actionsRow}>

@@ -1,8 +1,9 @@
 import { useFocusEffect } from "@react-navigation/native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Keyboard,
   KeyboardAvoidingView,
@@ -18,11 +19,14 @@ import {
 import DropDownPicker from "react-native-dropdown-picker";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import FormInput from "../components/FormInput";
+import { colors } from "../styles/colors";
 import { common } from "../styles/common";
 import { API_BASE, buildAuthHeader, TOKEN_KEY } from "../utils/auth";
 
 export default function ExpensesScreen() {
   const router = useRouter();
+  const { group: groupParam } = useLocalSearchParams<{ group?: string }>();
+  
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [notes, setNotes] = useState("");
@@ -40,11 +44,18 @@ export default function ExpensesScreen() {
   const [peopleLoading, setPeopleLoading] = useState(false);
 
   // Split between
-  const [newMemberText, setNewMemberText] = useState("");
   const [splitMembers, setSplitMembers] = useState<string[]>([]);
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
+
+  // Calculate split amount per person
+  const splitAmountPerPerson = useMemo(() => {
+    if (!amount || splitMembers.length === 0) return 0;
+    const num = Number(amount);
+    if (isNaN(num) || num <= 0) return 0;
+    return (num / splitMembers.length).toFixed(2);
+  }, [amount, splitMembers.length]);
 
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
@@ -59,6 +70,7 @@ export default function ExpensesScreen() {
     return e;
   }, [description, amount, group, paidBy, splitMembers]);
 
+  // Load groups on focus
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
@@ -82,13 +94,12 @@ export default function ExpensesScreen() {
           if (res.status === 401) {
             await SecureStore.deleteItemAsync(TOKEN_KEY);
             router.replace("/(auth)/LoginScreen");
+            return;
           }
 
           if (!res.ok) throw new Error(await res.text());
 
           const data = await res.json();
-          console.log("data from groups -> ", data);
-
           const items = (data?.groups ?? []).map(
             (g: { id: number | string; name: string }) => ({
               label: g.name,
@@ -97,10 +108,17 @@ export default function ExpensesScreen() {
           );
           if (isActive) {
             setGroups(items);
+            // Pre-select group from query parameter
+            if (groupParam && !group) {
+              const groupId = String(groupParam);
+              if (items.find((g: { value: string }) => g.value === groupId)) {
+                setGroup(groupId);
+              }
+            }
           }
         } catch (e: any) {
           console.log("Error while fetching groups -> ", e);
-          Alert.alert("error", "could not load groups");
+          Alert.alert("Error", "Could not load groups");
         } finally {
           if (isActive) {
             setGroupsLoading(false);
@@ -113,71 +131,83 @@ export default function ExpensesScreen() {
       return () => {
         isActive = false;
       };
-    }, [])
+    }, [groupParam])
   );
 
+  // Fetch group members when group is selected
   useEffect(() => {
-    console.log("set group value , call api -> ", group);
-    if (!group) return;
+    if (!group) {
+      setPeople([]);
+      setPaidBy(null);
+      setSplitMembers([]);
+      return;
+    }
+
     let isMounted = true;
-    const fetchGoupMembers = async () => {
+    const fetchGroupMembers = async () => {
       setPeopleLoading(true);
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      if (!token) {
-        router.replace("/(auth)/LoginScreen");
-        return null;
-      }
-
-      const res = await fetch(`${API_BASE}/api/groups/${group}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: buildAuthHeader(token),
-        },
-      });
-
-      if (res.status === 401 || res.status === 400) {
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
-        router.replace("/(auth)/LoginScreen");
-      }
-
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      console.log("data from group members api -> ", data);
-
-      const items = (data?.group_members ?? []).map(
-        (m: { id: number | string; name: string }) => ({
-          label: m.name,
-          value: String(m.id),
-        })
-      );
-      setPeople(items);
-      // If user hasn't chosen any split members yet, default to all members
-      setSplitMembers((prev) =>
-        prev.length === 0 ? items.map((i: { value: any }) => i.value) : prev
-      );
       try {
+        const token = await SecureStore.getItemAsync(TOKEN_KEY);
+        if (!token) {
+          router.replace("/(auth)/LoginScreen");
+          return;
+        }
+
+        const res = await fetch(`${API_BASE}/api/groups/${group}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: buildAuthHeader(token),
+          },
+        });
+
+        if (res.status === 401 || res.status === 400) {
+          await SecureStore.deleteItemAsync(TOKEN_KEY);
+          router.replace("/(auth)/LoginScreen");
+          return;
+        }
+
+        if (!res.ok) throw new Error(await res.text());
+        
+        const data = await res.json();
+        console.log("Group data:", data);
+        
+        // Handle both old and new API response formats
+        const members = data?.group?.members || data?.members || data?.group_members || [];
+        const items = members.map(
+          (m: { id: number | string; name?: string; email?: string }) => ({
+            label: m.name || m.email || "Unknown",
+            value: String(m.id),
+          })
+        );
+        
+        if (isMounted) {
+          setPeople(items);
+          // Default to all members for split
+          if (items.length > 0) {
+            setSplitMembers(items.map((i: { value: string }) => i.value));
+          }
+        }
       } catch (e: any) {
         console.log("Error while fetching group members -> ", e);
-        Alert.alert("error", "could not load group members");
+        Alert.alert("Error", "Could not load group members");
       } finally {
         if (isMounted) {
           setPeopleLoading(false);
         }
       }
     };
-    fetchGoupMembers();
+    
+    fetchGroupMembers();
     return () => {
       isMounted = false;
     };
   }, [group]);
 
-  // Ensure the "paid by" user is shown in the "Split equally between" chips
+  // Ensure the "paid by" user is included in split members
   useEffect(() => {
-    if (paidBy) {
-      setSplitMembers((prev) =>
-        prev.includes(paidBy) ? prev : [...prev, paidBy]
-      );
+    if (paidBy && !splitMembers.includes(paidBy)) {
+      setSplitMembers((prev) => [...prev, paidBy]);
     }
   }, [paidBy]);
 
@@ -185,22 +215,15 @@ export default function ExpensesScreen() {
     !!errors[field] && (touched[field] || touched.__submit);
 
   const toggleSplitMember = (id: string) => {
+    // Don't allow removing the payer from split
+    if (id === paidBy) {
+      Alert.alert("Cannot remove", "The person who paid must be included in the split.");
+      return;
+    }
     setSplitMembers((prev) =>
       prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
     );
   };
-
-  // const addNewSplitMember = () => {
-  //   const label = newMemberText.trim();
-  //   if (!label) return;
-  //   // create a synthetic value key
-  //   const key = label.toLowerCase().replace(/\s+/g, "_");
-  //   if (!people.find((p) => p.value === key)) {
-  //     setPeople((p) => [...p, { label, value: key }]);
-  //   }
-  //   if (!splitMembers.includes(key)) setSplitMembers((s) => [...s, key]);
-  //   setNewMemberText("");
-  // };
 
   const handleSubmit = async () => {
     setTouched((t) => ({ ...t, __submit: true }));
@@ -214,6 +237,7 @@ export default function ExpensesScreen() {
       Alert.alert("Fix the form", first ?? "Please check the fields");
       return;
     }
+    
     try {
       setSaving(true);
       const payload = {
@@ -223,13 +247,14 @@ export default function ExpensesScreen() {
         splitBetween: splitMembers,
         notes: notes.trim() || "",
       };
-      console.log("POST /api/expenses ->", payload);
+      console.log("POST /api/groups/${group}/expenses ->", payload);
 
       const token = await SecureStore.getItemAsync(TOKEN_KEY);
       if (!token) {
         router.replace("/(auth)/LoginScreen");
-        return null;
+        return;
       }
+      
       const res = await fetch(`${API_BASE}/api/groups/${group}/expenses`, {
         method: "POST",
         headers: {
@@ -242,33 +267,46 @@ export default function ExpensesScreen() {
       if (res.status === 401 || res.status === 400) {
         await SecureStore.deleteItemAsync(TOKEN_KEY);
         router.replace("/(auth)/LoginScreen");
+        return;
       }
 
       if (!res.ok) {
         const txt = await res.text();
-        throw new Error(txt || "Failed to create a group");
+        throw new Error(txt || "Failed to create expense");
       }
 
       const data = await res.json();
-      console.log("Create Expense res => ", data?.expense);
+      console.log("Create Expense response => ", data);
 
-      Alert.alert("Success", "Expense created.");
-      // reset
-      setDescription("");
-      setAmount("");
-      setGroup(null);
-      setPaidBy(null);
-      setSplitMembers([]);
-      setNotes("");
-      setTouched({});
+      Alert.alert("Success", "Expense added successfully!", [
+        {
+          text: "OK",
+          onPress: () => {
+            // Reset form
+            setDescription("");
+            setAmount("");
+            setNotes("");
+            setPaidBy(null);
+            setSplitMembers([]);
+            setTouched({});
+            
+            // Navigate back if came from group detail page
+            if (groupParam) {
+              router.back();
+            }
+          },
+        },
+      ]);
+    } catch (e: any) {
+      console.error("Error creating expense:", e);
+      Alert.alert("Error", e?.message || "Failed to create expense. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
-  // helpers for rendering
+  // Helper for rendering
   const peopleMap = Object.fromEntries(people.map((p) => [p.value, p.label]));
-  const selectedChips = splitMembers.map((id) => peopleMap[id]).filter(Boolean);
 
   return (
     <SafeAreaProvider>
@@ -287,9 +325,19 @@ export default function ExpensesScreen() {
               contentContainerStyle={{ paddingBottom: 32 }}
               keyboardShouldPersistTaps="handled"
             >
-              <Text style={styles.header}>Add New Expense</Text>
+              <View style={styles.headerRow}>
+                <Text style={styles.header}>Add New Expense</Text>
+                {groupParam && (
+                  <Pressable
+                    onPress={() => router.back()}
+                    style={styles.closeBtn}
+                  >
+                    <Text style={styles.closeBtnText}>✕</Text>
+                  </Pressable>
+                )}
+              </View>
 
-              <View style={[common.card, styles.card]}>
+              <View style={styles.card}>
                 <FormInput
                   placeholder="e.g., Dinner at restaurant"
                   lable="Description *"
@@ -306,7 +354,7 @@ export default function ExpensesScreen() {
 
                 <FormInput
                   lable="Amount *"
-                  placeholder="$ 0.00"
+                  placeholder="₹ 0.00"
                   keyboardType="numeric"
                   value={amount}
                   onChangeText={(v) => {
@@ -321,16 +369,7 @@ export default function ExpensesScreen() {
                 )}
 
                 {/* Group */}
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "500",
-                    marginBottom: 6,
-                    color: "#111827",
-                  }}
-                >
-                  Group *
-                </Text>
+                <Text style={styles.label}>Group *</Text>
                 <View style={{ zIndex: 30, width: "100%" }}>
                   <DropDownPicker
                     open={openGroupDropdown}
@@ -347,6 +386,7 @@ export default function ExpensesScreen() {
                     placeholder={
                       groupsLoading ? "Loading groups..." : "Select a group"
                     }
+                    disabled={groupsLoading}
                     listMode="SCROLLVIEW"
                     style={[styles.dropdown, styles.inputSurface]}
                     dropDownContainerStyle={[styles.dropdownContainer]}
@@ -368,16 +408,7 @@ export default function ExpensesScreen() {
                 )}
 
                 {/* Paid by */}
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "500",
-                    marginBottom: 6,
-                    color: "#111827",
-                  }}
-                >
-                  Paid by
-                </Text>
+                <Text style={styles.label}>Paid by *</Text>
                 <View style={{ zIndex: 20, width: "100%" }}>
                   <DropDownPicker
                     open={openPaidByDropdown}
@@ -391,7 +422,14 @@ export default function ExpensesScreen() {
                     }}
                     setValue={setPaidBy}
                     setItems={setPeople}
-                    placeholder="Select"
+                    placeholder={
+                      peopleLoading
+                        ? "Loading members..."
+                        : people.length === 0
+                          ? "Select a group first"
+                          : "Select who paid"
+                    }
+                    disabled={peopleLoading || people.length === 0}
                     listMode="SCROLLVIEW"
                     style={[styles.dropdown, styles.inputSurface]}
                     dropDownContainerStyle={[styles.dropdownContainer]}
@@ -413,98 +451,88 @@ export default function ExpensesScreen() {
                 )}
 
                 {/* Split between */}
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "500",
-                    marginBottom: 6,
-                    color: "#111827",
-                  }}
-                >
-                  Split between
-                </Text>
-
-                {/* Static people rows to match design */}
-                {people
-                  .filter((p) => p.value !== paidBy)
-                  .map((p) => (
-                    <Pressable
-                      onPress={() => toggleSplitMember(p.value)}
-                      hitSlop={8}
-                      key={p.value}
-                    >
-                      <View
-                        style={[
-                          styles.inputSurface,
-                          styles.rowBetween,
-                          styles.personRow,
-                        ]}
-                      >
-                        <Text style={styles.personLabel}>{p.label}</Text>
-
-                        <View
-                          style={[
-                            styles.checkCircle,
-                            splitMembers.includes(p.value) &&
-                              styles.checkCircleActive,
-                          ]}
-                        >
-                          {splitMembers.includes(p.value) && (
-                            <Text style={styles.checkIcon}>✓</Text>
-                          )}
-                        </View>
-                      </View>
-                    </Pressable>
-                  ))}
-
-                {/* Split equally chips */}
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "500",
-                    marginBottom: 6,
-                    color: "#111827",
-                  }}
-                >
-                  Split equally between:
-                </Text>
-                <View style={styles.chipsWrap}>
-                  {selectedChips.length === 0 ? (
-                    <Text style={[styles.hintMuted, { marginBottom: 6 }]}>
-                      No one selected yet
+                <Text style={styles.label}>Split between *</Text>
+                {people.length === 0 ? (
+                  <View style={styles.inputSurface}>
+                    <Text style={styles.hintMuted}>
+                      Select a group to see members
                     </Text>
-                  ) : (
-                    selectedChips.map((name) => (
-                      <View key={name} style={styles.chip}>
-                        <Text style={styles.chipText}>{name}</Text>
+                  </View>
+                ) : (
+                  <>
+                    {people.map((p) => {
+                      const isSelected = splitMembers.includes(p.value);
+                      const isPayer = p.value === paidBy;
+                      return (
+                        <Pressable
+                          onPress={() => toggleSplitMember(p.value)}
+                          hitSlop={8}
+                          key={p.value}
+                          disabled={isPayer}
+                        >
+                          <View
+                            style={[
+                              styles.inputSurface,
+                              styles.rowBetween,
+                              styles.personRow,
+                              isPayer && styles.personRowDisabled,
+                            ]}
+                          >
+                            <View style={styles.personInfo}>
+                              <Text style={styles.personLabel}>
+                                {p.label}
+                                {isPayer && (
+                                  <Text style={styles.payerBadge}> (Paid)</Text>
+                                )}
+                              </Text>
+                              {isSelected && amount && (
+                                <Text style={styles.splitAmount}>
+                                  ₹{splitAmountPerPerson} each
+                                </Text>
+                              )}
+                            </View>
+                            <View
+                              style={[
+                                styles.checkCircle,
+                                isSelected && styles.checkCircleActive,
+                              ]}
+                            >
+                              {isSelected && (
+                                <Text style={styles.checkIcon}>✓</Text>
+                              )}
+                            </View>
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                    
+                    {/* Split summary */}
+                    {splitMembers.length > 0 && amount && (
+                      <View style={styles.splitSummary}>
+                        <Text style={styles.splitSummaryText}>
+                          {splitMembers.length} {splitMembers.length === 1 ? "person" : "people"} × ₹{splitAmountPerPerson} = ₹{amount}
+                        </Text>
                       </View>
-                    ))
-                  )}
-                </View>
+                    )}
+                  </>
+                )}
+                {showError("split") && (
+                  <Text style={styles.error}>{errors.split}</Text>
+                )}
 
                 {/* Notes */}
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "500",
-                    marginBottom: 6,
-                    marginTop: 6,
-                    color: "#111827",
-                  }}
-                >
+                <Text style={[styles.label, { marginTop: 6 }]}>
                   Notes (Optional)
                 </Text>
-                <View style={[styles.inputSurface, { minHeight: 84 }]}>
+                <View style={[styles.inputSurface, styles.notesInput]}>
                   <TextInput
                     placeholder="Add any additional notes..."
                     placeholderTextColor="#9CA3AF"
-                    style={[
-                      styles.inputPlain,
-                      { height: 84, textAlignVertical: "top" },
-                    ]}
+                    style={styles.notesText}
                     value={notes}
                     onChangeText={setNotes}
                     multiline
+                    textAlignVertical="top"
                   />
                 </View>
               </View>
@@ -517,12 +545,14 @@ export default function ExpensesScreen() {
                 style={({ pressed }) => [
                   styles.btn,
                   pressed && styles.btnPressed,
-                  saving && { opacity: 0.7 },
+                  saving && styles.btnDisabled,
                 ]}
               >
-                <Text style={styles.btnText}>
-                  {saving ? "Saving..." : "Add Expense"}
-                </Text>
+                {saving ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.btnText}>Add Expense</Text>
+                )}
               </Pressable>
             </ScrollView>
           </TouchableWithoutFeedback>
@@ -533,20 +563,43 @@ export default function ExpensesScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { fontSize: 18, fontWeight: "700", marginBottom: 12 },
-  card: {
-    padding: 16,
-    flexDirection: "column",
-    alignItems: "flex-start",
-    marginBottom: 16,
-    borderRadius: 16,
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
   },
-  labelMuted: {
+  header: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  closeBtnText: {
+    fontSize: 18,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  label: {
     fontSize: 14,
     fontWeight: "600",
+    marginBottom: 8,
     color: "#111827",
-    opacity: 0.7,
-    marginBottom: 6,
   },
   inputSurface: {
     borderRadius: 12,
@@ -554,40 +607,72 @@ const styles = StyleSheet.create({
     borderColor: "#E5E7EB",
     paddingHorizontal: 14,
     paddingVertical: 12,
-    marginBottom: 10,
-    width: "100%",
+    marginBottom: 12,
+    backgroundColor: "#fff",
   },
-  inputPlain: {
-    fontSize: 16,
-    color: "#111827",
+  error: {
+    color: colors.danger,
+    marginTop: -8,
+    marginBottom: 8,
+    fontSize: 12,
   },
-  currencyPrefix: { fontSize: 16, color: "#6B7280", marginRight: 8 },
-  error: { color: "#DC2626", marginTop: -4, marginBottom: 6, fontSize: 12 },
-
-  // Dropdown restyle to match design
+  hintMuted: {
+    color: "#6B7280",
+    fontSize: 14,
+  },
+  // Dropdown styles
   dropdown: {
     borderWidth: 0,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#fff",
   },
   dropdownContainer: {
     borderColor: "#E5E7EB",
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: 12,
     overflow: "hidden",
   },
-  dropdownLabel: { color: "#111827" },
-  dropdownSelectedContainer: { backgroundColor: "#F3F4F6" },
-  dropdownSelectedLabel: { color: "#111827", fontWeight: "600" },
-
-  // People rows
-  row: { flexDirection: "row" },
+  dropdownLabel: {
+    color: "#111827",
+  },
+  dropdownSelectedContainer: {
+    backgroundColor: "#F3F4F6",
+  },
+  dropdownSelectedLabel: {
+    color: "#111827",
+    fontWeight: "600",
+  },
+  // Person rows
   rowBetween: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  personRow: { paddingVertical: 12, paddingHorizontal: 14, marginBottom: 10 },
-  personLabel: { fontSize: 16, color: "#111827" },
+  personRow: {
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    marginBottom: 8,
+  },
+  personRowDisabled: {
+    opacity: 0.7,
+  },
+  personInfo: {
+    flex: 1,
+  },
+  personLabel: {
+    fontSize: 16,
+    color: "#111827",
+    fontWeight: "500",
+  },
+  payerBadge: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: "600",
+  },
+  splitAmount: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 2,
+  },
   checkCircle: {
     width: 28,
     height: 28,
@@ -596,23 +681,42 @@ const styles = StyleSheet.create({
     borderColor: "#111827",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#fff",
   },
-  checkCircleActive: { backgroundColor: "#111827" },
-  checkIcon: { color: "#fff", fontWeight: "700" },
-
-  chipsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    backgroundColor: "#E5E7EB",
-    borderRadius: 999,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+  checkCircleActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
-  chipText: { color: "#111827", fontWeight: "600" },
-  hintMuted: { color: "#6B7280" },
-
+  checkIcon: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  splitSummary: {
+    backgroundColor: "#F9FAFB",
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  splitSummaryText: {
+    fontSize: 14,
+    color: "#111827",
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  notesInput: {
+    minHeight: 100,
+  },
+  notesText: {
+    fontSize: 16,
+    color: "#111827",
+    minHeight: 80,
+  },
   btn: {
-    backgroundColor: "#6B7280",
+    backgroundColor: colors.primary,
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 12,
@@ -620,6 +724,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
   },
-  btnPressed: { opacity: 0.96, transform: [{ scale: 0.997 }] },
-  btnText: { color: "#fff", fontWeight: "700", textAlign: "center" },
+  btnPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
+  },
+  btnDisabled: {
+    opacity: 0.6,
+  },
+  btnText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
 });
