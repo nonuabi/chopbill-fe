@@ -40,7 +40,7 @@ export default function GroupsScreen() {
   >([]);
 
   const [userList, setUserList] = useState<
-    { id: string; name: string; email: string }[]
+    { id: string; name: string; email?: string; phone_number?: string }[]
   >([]);
   const currentUserEmail = "me@sharefare.app"; // TODO: replace with real auth user email
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,7 +48,7 @@ export default function GroupsScreen() {
   const [groupdesciption, setGroupDiscription] = useState("");
   const [memberQuery, setMemberQuery] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<
-    { id?: string; email: string; name?: string; newUser?: boolean }[]
+    { id?: string; email?: string; phone_number?: string; name?: string; newUser?: boolean }[]
   >([]);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -124,30 +124,32 @@ export default function GroupsScreen() {
     fetchUsers();
   }, []);
 
-  const normalized = (s: string) => s.trim().toLowerCase();
+  const normalized = (s: string | null | undefined) => (s || "").trim().toLowerCase();
   const emailResults = userList.filter(
     (u) =>
-      normalized(u.email).includes(normalized(memberQuery)) ||
+      normalized(u.email || u.phone_number).includes(normalized(memberQuery)) ||
       normalized(u.name).includes(normalized(memberQuery))
   );
 
   const addMemberByEmail = (
-    email: string,
+    email?: string,
     name?: string,
     id?: string,
+    phone_number?: string,
     newUser = false
   ) => {
+    const identifier = email || phone_number || "";
     const exists = selectedMembers.some(
-      (m) => normalized(m.email) === normalized(email)
+      (m) => normalized(m.email || m.phone_number) === normalized(identifier)
     );
     if (exists) return;
-    setSelectedMembers((prev) => [...prev, { email, name, id, newUser }]);
+    setSelectedMembers((prev) => [...prev, { email, phone_number, name, id, newUser }]);
     setMemberQuery("");
   };
 
-  const removeMember = (email: string) => {
+  const removeMember = (identifier: string) => {
     setSelectedMembers((prev) =>
-      prev.filter((m) => normalized(m.email) !== normalized(email))
+      prev.filter((m) => normalized(m.email || m.phone_number) !== normalized(identifier))
     );
   };
 
@@ -383,20 +385,24 @@ export default function GroupsScreen() {
                   {/* Selected member chips */}
                   {selectedMembers.length > 0 && (
                     <View style={styles.chipsWrap}>
-                      {selectedMembers.map((m) => (
-                        <View key={m.email} style={styles.chip}>
-                          <Text style={styles.chipText}>
-                            {m.name ? `${m.name} · ${m.email}` : m.email}
-                            {m.newUser ? " (newUser)" : ""}
-                          </Text>
-                          <Pressable
-                            onPress={() => removeMember(m.email)}
-                            accessibilityRole="button"
-                          >
-                            <Text style={styles.chipRemove}>✕</Text>
-                          </Pressable>
-                        </View>
-                      ))}
+                      {selectedMembers.map((m, idx) => {
+                        const identifier = m.email || m.phone_number || `member-${idx}`;
+                        const displayText = m.email || m.phone_number || "Unknown";
+                        return (
+                          <View key={identifier} style={styles.chip}>
+                            <Text style={styles.chipText}>
+                              {m.name ? `${m.name} · ${displayText}` : displayText}
+                              {m.newUser ? " (newUser)" : ""}
+                            </Text>
+                            <Pressable
+                              onPress={() => removeMember(identifier)}
+                              accessibilityRole="button"
+                            >
+                              <Text style={styles.chipRemove}>✕</Text>
+                            </Pressable>
+                          </View>
+                        );
+                      })}
                     </View>
                   )}
 
@@ -419,12 +425,12 @@ export default function GroupsScreen() {
                           <Pressable
                             key={u.id}
                             onPress={() =>
-                              addMemberByEmail(u.email, u.name, u.id)
+                              addMemberByEmail(u.email, u.name, u.id, u.phone_number)
                             }
                             style={styles.resultRow}
                           >
                             <Text style={styles.resultName}>{u.name}</Text>
-                            <Text style={styles.resultEmail}>{u.email}</Text>
+                            <Text style={styles.resultEmail}>{u.email || u.phone_number || "No contact"}</Text>
                           </Pressable>
                         ))
                       ) : (
@@ -432,17 +438,17 @@ export default function GroupsScreen() {
                           <Text style={styles.resultEmptyText}>
                             No users found.
                           </Text>
-                          {/* Invite CTA if looks like an email */}
-                          {memberQuery.includes("@") && (
+                          {/* Invite CTA if looks like an email or phone */}
+                          {(memberQuery.includes("@") || /^\+?[1-9]\d{1,14}$/.test(memberQuery.trim())) && (
                             <Pressable
-                              onPress={() =>
-                                addMemberByEmail(
-                                  memberQuery.trim(),
-                                  undefined,
-                                  undefined,
-                                  true
-                                )
-                              }
+                              onPress={() => {
+                                const trimmed = memberQuery.trim();
+                                if (trimmed.includes("@")) {
+                                  addMemberByEmail(trimmed, undefined, undefined, undefined, true);
+                                } else {
+                                  addMemberByEmail(undefined, undefined, undefined, trimmed, true);
+                                }
+                              }}
                               style={[styles.inviteBtn, styles.btnPrimary]}
                             >
                               <Text style={styles.btnTextPrimary}>

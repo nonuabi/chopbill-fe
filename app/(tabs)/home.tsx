@@ -333,10 +333,10 @@ export default function HomeScreen() {
                 renderItem={({ item }) => (
                   <ListCard
                     variant="balance"
-                    name={item.user.name || item.user.email}
+                    name={item.user.name || item.user.email || item.user.phone_number || "User"}
                     amount={item.amount}
                     direction={item.direction}
-                    email={item.user.email}
+                    email={item.user.email || item.user.phone_number}
                     avatarUrl={item.user.avatar_url}
                     userId={item.user.id}
                     onPress={() => {

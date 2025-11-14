@@ -46,6 +46,9 @@ export default function ExpensesScreen() {
   // Split between
   const [splitMembers, setSplitMembers] = useState<string[]>([]);
 
+  // Current user info
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
 
@@ -70,7 +73,7 @@ export default function ExpensesScreen() {
     return e;
   }, [description, amount, group, paidBy, splitMembers]);
 
-  // Load groups on focus
+  // Load groups and current user on focus
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
@@ -81,6 +84,21 @@ export default function ExpensesScreen() {
           if (!token) {
             router.replace("/(auth)/LoginScreen");
             return;
+          }
+
+          // Fetch current user info
+          const userRes = await fetch(`${API_BASE}/api/me`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: buildAuthHeader(token),
+            },
+          });
+          if (userRes.ok) {
+            const userData = await userRes.json();
+            if (isActive) {
+              setCurrentUserId(String(userData?.data?.id || ""));
+            }
           }
 
           const res = await fetch(`${API_BASE}/api/groups`, {
@@ -175,10 +193,15 @@ export default function ExpensesScreen() {
         // Handle both old and new API response formats
         const members = data?.group?.members || data?.members || data?.group_members || [];
         const items = members.map(
-          (m: { id: number | string; name?: string; email?: string }) => ({
-            label: m.name || m.email || "Unknown",
-            value: String(m.id),
-          })
+          (m: { id: number | string; name?: string; email?: string }) => {
+            const memberId = String(m.id);
+            const isCurrentUser = currentUserId && memberId === currentUserId;
+            const baseLabel = m.name || m.email || "Unknown";
+            return {
+              label: isCurrentUser ? `${baseLabel} (YOU)` : baseLabel,
+              value: memberId,
+            };
+          }
         );
         
         if (isMounted) {
@@ -202,7 +225,7 @@ export default function ExpensesScreen() {
     return () => {
       isMounted = false;
     };
-  }, [group]);
+  }, [group, currentUserId]);
 
   // Ensure the "paid by" user is included in split members
   useEffect(() => {

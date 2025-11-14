@@ -23,19 +23,36 @@ const TOKEN_KEY = "sf_token";
 const isEmail = (v: string) =>
   /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v?.trim());
 
+const isPhoneNumber = (v: string) => {
+  // Remove spaces, dashes, and parentheses
+  const cleaned = v.replace(/[\s\-\(\)]/g, "");
+  // Check if it's a valid phone number (10-15 digits, optionally starting with +)
+  return /^\+?[1-9]\d{9,14}$/.test(cleaned);
+};
+
 export default function LoginScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [login, setLogin] = useState(""); // Can be email or phone
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const loginType = useMemo(() => {
+    if (isEmail(login)) return "email";
+    if (isPhoneNumber(login)) return "phone";
+    return "unknown";
+  }, [login]);
+
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
-    if (!isEmail(email)) e.email = "Enter a valid email";
+    if (!login.trim()) {
+      e.login = "Enter email or phone number";
+    } else if (loginType === "unknown") {
+      e.login = "Enter a valid email or phone number";
+    }
     if (!password || password.length < 6) e.password = "Min 6 characters";
     return e;
-  }, [email, password]);
+  }, [login, password, loginType]);
 
   const canSubmit = Object.keys(errors).length === 0 && !loading;
 
@@ -47,13 +64,19 @@ export default function LoginScreen() {
     }
 
     setLoading(true);
-    console.log("login api request: ", email, password);
+    console.log("login api request: ", login, password);
     console.log("API_BASE: ", API_BASE);
     try {
+      // Send as 'login' field - backend will handle both email and phone
       const res = await fetch(`${API_BASE}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: { email: email.trim(), password } }),
+        body: JSON.stringify({ 
+          user: { 
+            login: login.trim(), 
+            password 
+          } 
+        }),
       });
       console.log("login api response status: ", res.status);
       console.log("login api response: ", res);
@@ -75,28 +98,45 @@ export default function LoginScreen() {
     }
   };
 
+  const getPlaceholder = () => {
+    if (loginType === "email") return "you@example.com";
+    if (loginType === "phone") return "+1234567890";
+    return "Email or phone number";
+  };
+
+  const getKeyboardType = () => {
+    if (loginType === "email") return "email-address";
+    if (loginType === "phone") return "phone-pad";
+    return "default";
+  };
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={[common.safeViewContainer]}>
         <ScrollView contentContainerStyle={[common.container]}>
           <Text style={authStyles.brand}>Log in</Text>
 
-          <Text style={styles.label}>Email</Text>
+          <Text style={styles.label}>Email or Phone Number</Text>
           <TextInput
-            value={email}
-            onChangeText={setEmail}
+            value={login}
+            onChangeText={setLogin}
             autoCapitalize="none"
             autoCorrect={false}
-            keyboardType="email-address"
-            placeholder="you@example.com"
+            keyboardType={getKeyboardType()}
+            placeholder={getPlaceholder()}
             style={[
               authStyles.input,
-              //  !!errors.email && styles.inputError
+              errors.login && styles.inputError
             ]}
-            textContentType="emailAddress"
+            textContentType="username"
             placeholderTextColor="#9CA3AF"
           />
-          {/* {!!errors.email && <Text style={styles.error}>{errors.email}</Text>} */}
+          {errors.login && <Text style={styles.error}>{errors.login}</Text>}
+          {loginType !== "unknown" && login.trim() && (
+            <Text style={styles.hint}>
+              {loginType === "email" ? "✓ Email" : "✓ Phone number"}
+            </Text>
+          )}
 
           <Text style={[styles.label, { marginTop: 12 }]}>Password</Text>
           <View style={styles.row}>
@@ -108,7 +148,7 @@ export default function LoginScreen() {
               style={[
                 authStyles.input,
                 styles.flex,
-                // !!errors.password && styles.inputError,
+                errors.password && styles.inputError,
               ]}
               textContentType="password"
               placeholderTextColor="#9CA3AF"
@@ -120,9 +160,9 @@ export default function LoginScreen() {
               <Text>{showPassword ? "Hide" : "Show"}</Text>
             </Pressable>
           </View>
-          {/* {!!errors.password && (
+          {errors.password && (
             <Text style={styles.error}>{errors.password}</Text>
-          )} */}
+          )}
 
           <Pressable
             onPress={onSubmit}
@@ -177,4 +217,5 @@ const styles = StyleSheet.create({
   secondary: { marginTop: 12, alignItems: "center" },
   secondaryText: { textDecorationLine: "underline", opacity: 0.8 },
   error: { color: colors.danger, marginTop: 4, fontSize: 13, marginBottom: 2 },
+  hint: { color: colors.green, marginTop: 4, fontSize: 12 },
 });

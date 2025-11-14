@@ -26,16 +26,22 @@ const API_BASE = "http://10.0.2.2:3000";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [user, setUser] = useState<{ name?: string; email?: string } | null>(
-    null
-  );
+  const [user, setUser] = useState<{ 
+    id?: number | string;
+    name?: string; 
+    email?: string; 
+    phone_number?: string;
+    avatar_url?: string;
+  } | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [saving, setSaving] = useState(false);
   const openEdit = () => {
     setName(user?.name || "");
     setEmail(user?.email || "");
+    setPhoneNumber(user?.phone_number || "");
     setIsEditOpen(true);
   };
   const normalizeToken = (raw?: string | null) => {
@@ -65,7 +71,11 @@ export default function ProfileScreen() {
           "Content-Type": "application/json",
           Authorization: buildAuthHeader(token),
         },
-        body: JSON.stringify({ name: name.trim(), email: email.trim() }),
+        body: JSON.stringify({ 
+          name: name.trim(), 
+          email: email.trim() || null,
+          phone_number: phoneNumber.trim() || null
+        }),
       });
 
       if (res.status === 401 || res.status === 400) {
@@ -184,7 +194,7 @@ export default function ProfileScreen() {
                 }}
               >
                 <Text style={styles.title}>{user?.name || "User"}</Text>
-                <Text style={styles.muted}>{user?.email || ""}</Text>
+                <Text style={styles.muted}>{user?.email || user?.phone_number || ""}</Text>
               </View>
             </View>
             <Pressable
@@ -229,7 +239,7 @@ export default function ProfileScreen() {
                           placeholderTextColor="#9CA3AF"
                         />
 
-                        <Text style={styles.label}>Email</Text>
+                        <Text style={styles.label}>Email (Optional)</Text>
                         <TextInput
                           style={styles.input}
                           placeholder="you@example.com"
@@ -237,6 +247,18 @@ export default function ProfileScreen() {
                           autoCapitalize="none"
                           value={email}
                           onChangeText={setEmail}
+                          editable={!saving}
+                          placeholderTextColor="#9CA3AF"
+                        />
+
+                        <Text style={styles.label}>Phone Number (Optional)</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="+1234567890"
+                          keyboardType="phone-pad"
+                          autoCapitalize="none"
+                          value={phoneNumber}
+                          onChangeText={setPhoneNumber}
                           editable={!saving}
                           placeholderTextColor="#9CA3AF"
                         />

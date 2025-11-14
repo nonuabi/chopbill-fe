@@ -21,18 +21,36 @@ import { colors } from "../../styles/colors";
 import { common } from "../../styles/common";
 import { API_BASE, buildAuthHeader, TOKEN_KEY } from "../../utils/auth";
 
-type GroupMember = { id?: string; name?: string; email: string };
+type GroupMember = { 
+  id?: string | number; 
+  name?: string; 
+  email?: string; 
+  phone_number?: string;
+  avatar_url?: string;
+};
 type Expense = {
   id: number;
   description: string;
   amount: number;
-  paid_by: { id: number; name: string; email: string };
+  paid_by: { 
+    id: number; 
+    name: string; 
+    email?: string; 
+    phone_number?: string;
+    avatar_url?: string;
+  };
   created_at: string;
   notes?: string;
   split_count: number;
 };
 type MemberBalance = {
-  user: GroupMember;
+  user: {
+    id?: string | number;
+    name?: string;
+    email?: string;
+    phone_number?: string;
+    avatar_url?: string;
+  };
   balance: number;
   owes_you: number;
   you_owe: number;
@@ -124,8 +142,16 @@ export default function GroupDetailsScreen() {
   // Filter members who owe you or you owe
   const membersWhoOweYou = memberBalances.filter((mb) => mb.owes_you > 0);
   const membersYouOwe = memberBalances.filter((mb) => mb.you_owe > 0);
-  const settledMembers = memberBalances.filter(
-    (mb) => mb.balance === 0 && mb.user.id !== group?.members?.[0]?.id
+  
+  // Get IDs of members who already appear in balance sections
+  const membersWithBalances = new Set([
+    ...membersWhoOweYou.map((mb) => mb.user.id || mb.user.email || mb.user.phone_number),
+    ...membersYouOwe.map((mb) => mb.user.id || mb.user.email || mb.user.phone_number),
+  ]);
+
+  // Filter members for "All Members" - only show settled members (not in balance sections)
+  const settledMembers = (group?.members || []).filter(
+    (member) => !membersWithBalances.has(member.id || member.email || member.phone_number)
   );
 
   return (
@@ -226,12 +252,12 @@ export default function GroupDetailsScreen() {
                     <View style={styles.card}>
                       {membersWhoOweYou.map((mb, idx) => (
                         <ListCard
-                          key={mb.user.id || mb.user.email || idx}
+                          key={mb.user.id || mb.user.email || mb.user.phone_number || idx}
                           variant="balance"
-                          name={mb.user.name || mb.user.email}
+                          name={mb.user.name || mb.user.email || mb.user.phone_number || "User"}
                           amount={mb.owes_you}
                           direction="+"
-                          email={mb.user.email}
+                          email={mb.user.email || mb.user.phone_number}
                           avatarUrl={mb.user.avatar_url}
                           userId={mb.user.id}
                           onPress={() => {
@@ -250,12 +276,12 @@ export default function GroupDetailsScreen() {
                     <View style={styles.card}>
                       {membersYouOwe.map((mb, idx) => (
                         <ListCard
-                          key={mb.user.id || mb.user.email || idx}
+                          key={mb.user.id || mb.user.email || mb.user.phone_number || idx}
                           variant="balance"
-                          name={mb.user.name || mb.user.email}
+                          name={mb.user.name || mb.user.email || mb.user.phone_number || "User"}
                           amount={mb.you_owe}
                           direction="-"
-                          email={mb.user.email}
+                          email={mb.user.email || mb.user.phone_number}
                           avatarUrl={mb.user.avatar_url}
                           userId={mb.user.id}
                           onPress={() => {
@@ -312,19 +338,19 @@ export default function GroupDetailsScreen() {
                           ]}
                         >
                           <ProfileAvatar
-                            fullName={member.name || member.email}
-                            email={member.email}
+                            fullName={member.name || member.email || member.phone_number || "User"}
+                            email={member.email || member.phone_number}
                             avatarUrl={member.avatar_url}
                             userId={member.id}
                             size={40}
                           />
                           <View style={styles.memberInfo}>
                             <Text style={styles.memberName}>
-                              {member.name || member.email}
+                              {member.name || member.email || member.phone_number || "User"}
                             </Text>
-                            {member.name ? (
+                            {(member.name && (member.email || member.phone_number)) ? (
                               <Text style={styles.memberEmail}>
-                                {member.email}
+                                {member.email || member.phone_number}
                               </Text>
                             ) : null}
                           </View>
