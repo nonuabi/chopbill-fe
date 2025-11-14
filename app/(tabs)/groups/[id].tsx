@@ -143,16 +143,23 @@ export default function GroupDetailsScreen() {
   const membersWhoOweYou = memberBalances.filter((mb) => mb.owes_you > 0);
   const membersYouOwe = memberBalances.filter((mb) => mb.you_owe > 0);
   
-  // Get IDs of members who already appear in balance sections
+  // Get IDs of members who already appear in balance sections (normalize to strings for comparison)
+  const normalizeId = (id: any) => String(id || "");
   const membersWithBalances = new Set([
-    ...membersWhoOweYou.map((mb) => mb.user.id || mb.user.email || mb.user.phone_number),
-    ...membersYouOwe.map((mb) => mb.user.id || mb.user.email || mb.user.phone_number),
+    ...membersWhoOweYou.map((mb) => normalizeId(mb.user.id) || mb.user.email || mb.user.phone_number || ""),
+    ...membersYouOwe.map((mb) => normalizeId(mb.user.id) || mb.user.email || mb.user.phone_number || ""),
   ]);
 
-  // Filter members for "All Members" - only show settled members (not in balance sections)
-  const settledMembers = (group?.members || []).filter(
-    (member) => !membersWithBalances.has(member.id || member.email || member.phone_number)
-  );
+  // Show ALL members in "All Members" section, but mark which ones are settled
+  const allMembers = (group?.members || []).map((member) => {
+    const memberId = normalizeId(member.id) || member.email || member.phone_number || "";
+    const hasBalance = membersWithBalances.has(memberId);
+    return {
+      ...member,
+      hasBalance,
+      isSettled: !hasBalance,
+    };
+  });
 
   return (
     <SafeAreaProvider>
@@ -323,17 +330,17 @@ export default function GroupDetailsScreen() {
                   </View>
                 )}
 
-                {/* All Members List - Only show settled members */}
-                {settledMembers.length > 0 && (
+                {/* All Members List - Show all members */}
+                {allMembers.length > 0 && (
                   <View style={styles.section}>
                     <Text style={styles.sectionTitle}>All Members</Text>
                     <View style={styles.card}>
-                      {settledMembers.map((member, idx) => (
+                      {allMembers.map((member, idx) => (
                         <View
-                          key={member.id || member.email || idx}
+                          key={member.id || member.email || member.phone_number || idx}
                           style={[
                             styles.memberRow,
-                            idx < settledMembers.length - 1 &&
+                            idx < allMembers.length - 1 &&
                               styles.memberRowBorder,
                           ]}
                         >
@@ -345,9 +352,16 @@ export default function GroupDetailsScreen() {
                             size={40}
                           />
                           <View style={styles.memberInfo}>
-                            <Text style={styles.memberName}>
-                              {member.name || member.email || member.phone_number || "User"}
-                            </Text>
+                            <View style={styles.memberNameRow}>
+                              <Text style={styles.memberName}>
+                                {member.name || member.email || member.phone_number || "User"}
+                              </Text>
+                              {member.isSettled && (
+                                <View style={styles.settledBadge}>
+                                  <Text style={styles.settledBadgeText}>Settled</Text>
+                                </View>
+                              )}
+                            </View>
                             {(member.name && (member.email || member.phone_number)) ? (
                               <Text style={styles.memberEmail}>
                                 {member.email || member.phone_number}
@@ -537,11 +551,30 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     flex: 1,
   },
+  memberNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 2,
+    gap: 8,
+  },
   memberName: {
     fontSize: 16,
     fontWeight: "600",
     color: "#111827",
-    marginBottom: 2,
+    flex: 1,
+  },
+  settledBadge: {
+    backgroundColor: "#F0FDF4",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.green,
+  },
+  settledBadgeText: {
+    fontSize: 11,
+    color: colors.green,
+    fontWeight: "600",
   },
   memberEmail: {
     fontSize: 13,

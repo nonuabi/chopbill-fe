@@ -1,7 +1,8 @@
+import Feather from "@expo/vector-icons/Feather";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Keyboard,
@@ -9,6 +10,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -32,12 +34,20 @@ export default function ProfileScreen() {
     email?: string; 
     phone_number?: string;
     avatar_url?: string;
+    created_at?: string;
+    stats?: {
+      total_groups?: number;
+      owned_groups?: number;
+      total_expenses?: number;
+      total_spent?: number;
+    };
   } | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const openEdit = () => {
     setName(user?.name || "");
     setEmail(user?.email || "");
@@ -127,87 +137,210 @@ export default function ProfileScreen() {
     }
   };
 
-  useEffect(() => {
-    let isMounted = true;
-    const controller = new AbortController();
-
-    const fetchUser = async () => {
-      try {
-        const token = await SecureStore.getItemAsync(TOKEN_KEY);
-        if (!token) {
-          if (isMounted) router.replace("/(auth)/LoginScreen");
-          return;
-        }
-
-        const res = await fetch(`${API_BASE}/api/me`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: buildAuthHeader(token),
-          },
-          signal: controller.signal,
-        });
-
-        if (res.status === 401 || res.status === 400) {
-          await SecureStore.deleteItemAsync(TOKEN_KEY);
-          router.replace("/(auth)/LoginScreen");
-        }
-
-        if (!res.ok) throw new Error(await res.text());
-        const data = await res.json();
-        if (isMounted) setUser(data?.data);
-      } catch (e: any) {
-        if (e?.name === "AbortError") return;
-        console.log("profile error!", e);
+  const fetchUser = useCallback(async () => {
+    try {
+      const token = await SecureStore.getItemAsync(TOKEN_KEY);
+      if (!token) {
+        router.replace("/(auth)/LoginScreen");
+        return;
       }
-    };
 
+      const res = await fetch(`${API_BASE}/api/me`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: buildAuthHeader(token),
+        },
+      });
+
+      if (res.status === 401 || res.status === 400) {
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        router.replace("/(auth)/LoginScreen");
+        return;
+      }
+
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setUser(data?.data);
+    } catch (e: any) {
+      console.log("profile error!", e);
+      if (!refreshing) {
+        Alert.alert("Error", "Could not load profile data");
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [router, refreshing]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
     fetchUser();
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, []);
+  }, [fetchUser]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchUser();
+    }, [fetchUser])
+  );
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-IN", { 
+        year: "numeric", 
+        month: "long", 
+        day: "numeric" 
+      });
+    } catch {
+      return "";
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return `₹${amount.toFixed(2)}`;
+  };
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={[common.safeViewContainer]}>
-        {/* <Header /> */}
-        <ScrollView contentContainerStyle={[common.container]}>
-          <View style={[common.card, { padding: 24, marginBottom: 24 }]}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
+        <ScrollView 
+          contentContainerStyle={[common.container]}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Profile Header Card */}
+          <View style={styles.profileCard}>
+            <View style={styles.profileHeader}>
               <ProfileAvatar 
                 fullName={user?.name || user?.email || ""} 
                 email={user?.email}
                 avatarUrl={user?.avatar_url}
                 userId={user?.id}
-                size={80}
+                size={100}
               />
-              <View
-                style={{
-                  marginLeft: 10,
-                }}
+              <View style={styles.profileInfo}>
+                <Text style={styles.profileName}>{user?.name || "User"}</Text>
+                <Text style={styles.profileContact}>
+                  {user?.email || user?.phone_number || "No contact info"}
+                </Text>
+                {user?.created_at && (
+                  <Text style={styles.memberSince}>
+                    Member since {formatDate(user.created_at)}
+                  </Text>
+                )}
+              </View>
+              <Pressable
+                onPress={openEdit}
+                style={styles.editButton}
+                hitSlop={8}
               >
-                <Text style={styles.title}>{user?.name || "User"}</Text>
-                <Text style={styles.muted}>{user?.email || user?.phone_number || ""}</Text>
+                <Feather name="edit-2" size={20} color={colors.primary} />
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Stats Section */}
+          {user?.stats && (
+            <View style={styles.statsSection}>
+              <Text style={styles.sectionTitle}>Your Activity</Text>
+              <View style={styles.statsGrid}>
+                <View style={styles.statCard}>
+                  <View style={[styles.statIcon, { backgroundColor: "#EEF2FF" }]}>
+                    <Feather name="users" size={24} color="#6366F1" />
+                  </View>
+                  <Text style={styles.statValue}>{user.stats.total_groups || 0}</Text>
+                  <Text style={styles.statLabel}>Groups</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <View style={[styles.statIcon, { backgroundColor: "#F0FDF4" }]}>
+                    <Feather name="user-check" size={24} color={colors.green} />
+                  </View>
+                  <Text style={styles.statValue}>{user.stats.owned_groups || 0}</Text>
+                  <Text style={styles.statLabel}>Owned</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <View style={[styles.statIcon, { backgroundColor: "#FEF3C7" }]}>
+                    <Feather name="file-text" size={24} color="#F59E0B" />
+                  </View>
+                  <Text style={styles.statValue}>{user.stats.total_expenses || 0}</Text>
+                  <Text style={styles.statLabel}>Expenses</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <View style={[styles.statIcon, { backgroundColor: "#DBEAFE" }]}>
+                    <Feather name="trending-up" size={24} color="#3B82F6" />
+                  </View>
+                  <Text style={styles.statValue}>
+                    {formatCurrency(user.stats.total_spent || 0)}
+                  </Text>
+                  <Text style={styles.statLabel}>Total Spent</Text>
+                </View>
               </View>
             </View>
-            <Pressable
+          )}
+
+          {/* Account Info Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Account Information</Text>
+            <View style={styles.infoCard}>
+              <View style={styles.infoRow}>
+                <View style={styles.infoLeft}>
+                  <Feather name="mail" size={20} color="#6B7280" />
+                  <Text style={styles.infoLabel}>Email</Text>
+                </View>
+                <Text style={styles.infoValue}>
+                  {user?.email || "Not provided"}
+                </Text>
+              </View>
+              <View style={styles.infoDivider} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoLeft}>
+                  <Feather name="phone" size={20} color="#6B7280" />
+                  <Text style={styles.infoLabel}>Phone</Text>
+                </View>
+                <Text style={styles.infoValue}>
+                  {user?.phone_number || "Not provided"}
+                </Text>
+              </View>
+              {user?.created_at && (
+                <>
+                  <View style={styles.infoDivider} />
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoLeft}>
+                      <Feather name="calendar" size={20} color="#6B7280" />
+                      <Text style={styles.infoLabel}>Joined</Text>
+                    </View>
+                    <Text style={styles.infoValue}>
+                      {formatDate(user.created_at)}
+                    </Text>
+                  </View>
+                </>
+              )}
+            </View>
+          </View>
+
+          {/* Actions Section */}
+          <View style={styles.section}>
+            <Pressable 
+              style={styles.actionCard}
               onPress={openEdit}
-              style={({ pressed }) => [
-                {
-                  backgroundColor: pressed ? "rgba(44, 49, 55, 0.13)" : "white",
-                },
-              ]}
             >
-              <FontAwesome name="edit" size={24} color="black" />
+              <View style={styles.actionLeft}>
+                <View style={[styles.actionIcon, { backgroundColor: "#F3F4F6" }]}>
+                  <Feather name="edit-3" size={20} color={colors.primary} />
+                </View>
+                <View>
+                  <Text style={styles.actionTitle}>Edit Profile</Text>
+                  <Text style={styles.actionSubtitle}>Update your name and contact info</Text>
+                </View>
+              </View>
+              <Feather name="chevron-right" size={20} color="#9CA3AF" />
             </Pressable>
-            <Modal
+          </View>
+
+          <Modal
               visible={isEditOpen}
               transparent
               animationType="fade"
@@ -291,22 +424,26 @@ export default function ProfileScreen() {
                 </View>
               </TouchableWithoutFeedback>
             </Modal>
-          </View>
-          {/* TODO */}
-          {/* 
-          <Pressable style={[common.card, { padding: 24, marginBottom: 12 }]}>
-            <Text>Invite Friends to ShareFare</Text>
-          </Pressable> */}
 
-          <Pressable style={[common.card, { padding: 24 }]} onPress={logout}>
-            <Text
-              style={{
-                color: colors.danger,
+          {/* Sign Out */}
+          <View style={styles.section}>
+            <Pressable 
+              style={styles.signOutCard}
+              onPress={() => {
+                Alert.alert(
+                  "Sign Out",
+                  "Are you sure you want to sign out?",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Sign Out", style: "destructive", onPress: logout },
+                  ]
+                );
               }}
             >
-              Sign Out
-            </Text>
-          </Pressable>
+              <Feather name="log-out" size={20} color={colors.danger} />
+              <Text style={styles.signOutText}>Sign Out</Text>
+            </Pressable>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>
@@ -314,6 +451,178 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  profileCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  profileHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  profileInfo: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  profileName: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  profileContact: {
+    fontSize: 15,
+    color: "#6B7280",
+    marginBottom: 4,
+  },
+  memberSince: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    marginTop: 4,
+  },
+  editButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "#F3F4F6",
+  },
+  statsSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 12,
+  },
+  statsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    minWidth: "47%",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    alignItems: "center",
+  },
+  statIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 13,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  section: {
+    marginBottom: 20,
+  },
+  infoCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    overflow: "hidden",
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+  },
+  infoLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  infoLabel: {
+    fontSize: 15,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  infoValue: {
+    fontSize: 15,
+    color: "#111827",
+    fontWeight: "600",
+    flex: 1,
+    textAlign: "right",
+  },
+  infoDivider: {
+    height: 1,
+    backgroundColor: "#F3F4F6",
+    marginLeft: 16,
+  },
+  actionCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  actionLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  actionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: 2,
+  },
+  actionSubtitle: {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  signOutCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  signOutText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.danger,
+  },
   title: { fontSize: 20, fontWeight: "600" },
   muted: { opacity: 0.7 },
 
