@@ -21,7 +21,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import FormInput from "../components/FormInput";
 import { colors } from "../styles/colors";
 import { common } from "../styles/common";
-import { API_BASE, buildAuthHeader, TOKEN_KEY } from "../utils/auth";
+import { API_BASE, authenticatedFetch, TOKEN_KEY } from "../utils/auth";
 
 export default function ExpensesScreen() {
   const router = useRouter();
@@ -80,38 +80,24 @@ export default function ExpensesScreen() {
       const loadGroups = async () => {
         try {
           setGroupsLoading(true);
-          const token = await SecureStore.getItemAsync(TOKEN_KEY);
-          if (!token) {
-            router.replace("/(auth)/LoginScreen");
-            return;
-          }
 
           // Fetch current user info
-          const userRes = await fetch(`${API_BASE}/api/me`, {
+          const userRes = await authenticatedFetch(`${API_BASE}/api/me`, {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: buildAuthHeader(token),
-            },
           });
-          if (userRes.ok) {
+          if (userRes?.ok) {
             const userData = await userRes.json();
             if (isActive) {
               setCurrentUserId(String(userData?.data?.id || ""));
             }
           }
 
-          const res = await fetch(`${API_BASE}/api/groups`, {
+          const res = await authenticatedFetch(`${API_BASE}/api/groups`, {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: buildAuthHeader(token),
-            },
           });
 
-          if (res.status === 401) {
-            await SecureStore.deleteItemAsync(TOKEN_KEY);
-            router.replace("/(auth)/LoginScreen");
+          if (!res) {
+            // Auth error already handled
             return;
           }
 
@@ -165,23 +151,12 @@ export default function ExpensesScreen() {
     const fetchGroupMembers = async () => {
       setPeopleLoading(true);
       try {
-        const token = await SecureStore.getItemAsync(TOKEN_KEY);
-        if (!token) {
-          router.replace("/(auth)/LoginScreen");
-          return;
-        }
-
-        const res = await fetch(`${API_BASE}/api/groups/${group}`, {
+        const res = await authenticatedFetch(`${API_BASE}/api/groups/${group}`, {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: buildAuthHeader(token),
-          },
         });
 
-        if (res.status === 401 || res.status === 400) {
-          await SecureStore.deleteItemAsync(TOKEN_KEY);
-          router.replace("/(auth)/LoginScreen");
+        if (!res) {
+          // Auth error already handled
           return;
         }
 
@@ -272,24 +247,13 @@ export default function ExpensesScreen() {
       };
       console.log("POST /api/groups/${group}/expenses ->", payload);
 
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      if (!token) {
-        router.replace("/(auth)/LoginScreen");
-        return;
-      }
-      
-      const res = await fetch(`${API_BASE}/api/groups/${group}/expenses`, {
+      const res = await authenticatedFetch(`${API_BASE}/api/groups/${group}/expenses`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: buildAuthHeader(token),
-        },
         body: JSON.stringify({ expense: payload }),
       });
 
-      if (res.status === 401 || res.status === 400) {
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
-        router.replace("/(auth)/LoginScreen");
+      if (!res) {
+        // Auth error already handled
         return;
       }
 

@@ -22,9 +22,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import ProfileAvatar from "../components/ProfileAvtar";
 import { colors } from "../styles/colors";
 import { common } from "../styles/common";
-
-const TOKEN_KEY = "sf_token";
-const API_BASE = "http://10.0.2.2:3000";
+import { API_BASE, authenticatedFetch, handleAuthError, logout as authLogout, TOKEN_KEY } from "../utils/auth";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -54,33 +52,12 @@ export default function ProfileScreen() {
     setPhoneNumber(user?.phone_number || "");
     setIsEditOpen(true);
   };
-  const normalizeToken = (raw?: string | null) => {
-    const t = (raw ?? "").trim().replace(/^"|"$/g, "");
-    return t.toLowerCase().startsWith("bearer ")
-      ? t.split(" ").slice(1).join(" ")
-      : t;
-  };
-
-  const buildAuthHeader = (token?: string | null) => {
-    const b = normalizeToken(token);
-    return b ? `Bearer ${b}` : "";
-  };
   const onSubmit = async () => {
     try {
       setSaving(true);
 
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      if (!token) {
-        router.replace("/(auth)/LoginScreen");
-        return null;
-      }
-
-      const res = await fetch(`${API_BASE}/api/me`, {
+      const res = await authenticatedFetch(`${API_BASE}/api/me`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: buildAuthHeader(token),
-        },
         body: JSON.stringify({ 
           name: name.trim(), 
           email: email.trim() || null,
@@ -88,9 +65,9 @@ export default function ProfileScreen() {
         }),
       });
 
-      if (res.status === 401 || res.status === 400) {
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
-        router.replace("/(auth)/LoginScreen");
+      if (!res) {
+        // Auth error already handled
+        return;
       }
 
       if (!res.ok) {
@@ -116,46 +93,22 @@ export default function ProfileScreen() {
 
   const logout = async () => {
     try {
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      if (!token) {
-        router.replace("/(auth)/LoginScreen");
-        return null;
-      }
-
-      const res = await fetch(`${API_BASE}/logout`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: buildAuthHeader(token),
-        },
-      });
-      console.log("logout res => ", res);
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
-      router.replace("/(auth)/LoginScreen");
+      await authLogout();
     } catch (e) {
+      console.error("Logout error:", e);
+      // authLogout handles errors internally, but show user-friendly message
       Alert.alert("Error", "Could not log out, please try again.");
     }
   };
 
   const fetchUser = useCallback(async () => {
     try {
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      if (!token) {
-        router.replace("/(auth)/LoginScreen");
-        return;
-      }
-
-      const res = await fetch(`${API_BASE}/api/me`, {
+      const res = await authenticatedFetch(`${API_BASE}/api/me`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: buildAuthHeader(token),
-        },
       });
 
-      if (res.status === 401 || res.status === 400) {
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
-        router.replace("/(auth)/LoginScreen");
+      if (!res) {
+        // Auth error already handled
         return;
       }
 
@@ -170,7 +123,7 @@ export default function ProfileScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [router, refreshing]);
+  }, [refreshing]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

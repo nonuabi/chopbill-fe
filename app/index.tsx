@@ -1,10 +1,8 @@
 import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { common } from "./styles/common";
-
-const TOKEN_KEY = "sf_token";
+import { validateSession } from "./utils/auth";
 
 export default function Index() {
   const [checking, setChecking] = useState(true);
@@ -13,8 +11,8 @@ export default function Index() {
   useEffect(() => {
     (async () => {
       try {
-        let token = await SecureStore.getItemAsync(TOKEN_KEY);
-        if (token) {
+        const isValid = await validateSession();
+        if (isValid) {
           router.replace("/home");
         } else {
           router.replace("/(auth)/LoginScreen");
@@ -26,7 +24,7 @@ export default function Index() {
         setChecking(false);
       }
     })();
-  }, []);
+  }, [router]);
 
   if (checking) {
     return (

@@ -19,7 +19,7 @@ import ListCard from "../../components/ListCard";
 import ProfileAvatar from "../../components/ProfileAvtar";
 import { colors } from "../../styles/colors";
 import { common } from "../../styles/common";
-import { API_BASE, buildAuthHeader, TOKEN_KEY } from "../../utils/auth";
+import { API_BASE, authenticatedFetch, TOKEN_KEY } from "../../utils/auth";
 
 type GroupMember = { 
   id?: string | number; 
@@ -77,22 +77,12 @@ export default function GroupDetailsScreen() {
 
   const fetchGroupDetails = async () => {
     try {
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      if (!token) {
-        router.replace("/(auth)/LoginScreen");
-        return;
-      }
-      const res = await fetch(`${API_BASE}/api/groups/${id}`, {
+      const res = await authenticatedFetch(`${API_BASE}/api/groups/${id}`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: buildAuthHeader(token),
-        },
       });
 
-      if (res.status === 401 || res.status === 400) {
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
-        router.replace("/(auth)/LoginScreen");
+      if (!res) {
+        // Auth error already handled
         return;
       }
 

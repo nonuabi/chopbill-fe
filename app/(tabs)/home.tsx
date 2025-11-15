@@ -18,7 +18,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import ListCard from "../components/ListCard";
 import { colors } from "../styles/colors";
 import { common } from "../styles/common";
-import { API_BASE, buildAuthHeader, TOKEN_KEY } from "../utils/auth";
+import { API_BASE, authenticatedFetch, TOKEN_KEY } from "../utils/auth";
 
 type OutstandingBalance = {
   user: {
@@ -62,36 +62,21 @@ export default function HomeScreen() {
 
   const fetchDashboardData = useCallback(async () => {
     try {
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      if (!token) {
-        router.replace("/(auth)/LoginScreen");
-        return;
-      }
-
       // Fetch user info for greeting
-      const userRes = await fetch(`${API_BASE}/api/me`, {
+      const userRes = await authenticatedFetch(`${API_BASE}/api/me`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: buildAuthHeader(token),
-        },
       });
-      if (userRes.ok) {
+      if (userRes?.ok) {
         const userData = await userRes.json();
         setUserName(userData?.data?.name || "");
       }
 
-      const res = await fetch(`${API_BASE}/api/dashboard`, {
+      const res = await authenticatedFetch(`${API_BASE}/api/dashboard`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: buildAuthHeader(token),
-        },
       });
 
-      if (res.status === 401 || res.status === 400) {
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
-        router.replace("/(auth)/LoginScreen");
+      if (!res) {
+        // Auth error already handled
         return;
       }
 
@@ -114,7 +99,7 @@ export default function HomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [router]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {

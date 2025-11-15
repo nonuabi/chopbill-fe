@@ -22,11 +22,8 @@ import {
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "../../styles/colors";
 import { common } from "../../styles/common";
-import { buildAuthHeader } from "../../utils/auth";
+import { API_BASE, authenticatedFetch, TOKEN_KEY } from "../../utils/auth";
 import ProfileAvatar from "../../components/ProfileAvtar";
-
-const TOKEN_KEY = "sf_token";
-const API_BASE = "http://10.0.2.2:3000";
 
 // Currency formatter helper
 const formatCurrency = (amount: number): string => {
@@ -102,22 +99,12 @@ export default function GroupsScreen() {
 
   const fetchUserGroups = useCallback(async () => {
     try {
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      if (!token) {
-        router.replace("/(auth)/LoginScreen");
-        return;
-      }
-      const res = await fetch(`${API_BASE}/api/groups`, {
+      const res = await authenticatedFetch(`${API_BASE}/api/groups`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: buildAuthHeader(token),
-        },
       });
 
-      if (res.status === 401 || res.status === 400) {
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
-        router.replace("/(auth)/LoginScreen");
+      if (!res) {
+        // Auth error already handled
         return;
       }
 
@@ -136,26 +123,16 @@ export default function GroupsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [refreshing, router]);
+  }, [refreshing]);
 
   const fetchUsers = useCallback(async () => {
     try {
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      if (!token) {
-        router.replace("/(auth)/LoginScreen");
-        return;
-      }
-      const res = await fetch(`${API_BASE}/api/users`, {
+      const res = await authenticatedFetch(`${API_BASE}/api/users`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: buildAuthHeader(token),
-        },
       });
 
-      if (res.status === 401 || res.status === 400) {
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
-        router.replace("/(auth)/LoginScreen");
+      if (!res) {
+        // Auth error already handled
         return;
       }
 
@@ -171,7 +148,7 @@ export default function GroupsScreen() {
         Alert.alert("Error", "Failed to load users. Please try again.");
       }
     }
-  }, [refreshing, router]);
+  }, [refreshing]);
 
   useFocusEffect(
     useCallback(() => {
@@ -252,24 +229,14 @@ export default function GroupsScreen() {
       } as const;
       console.log("new group => ", newGroup);
 
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      if (!token) {
-        router.replace("/(auth)/LoginScreen");
-        return null;
-      }
-
-      const res = await fetch(`${API_BASE}/api/groups`, {
+      const res = await authenticatedFetch(`${API_BASE}/api/groups`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: buildAuthHeader(token),
-        },
         body: JSON.stringify({ group: newGroup }),
       });
 
-      if (res.status === 401 || res.status === 400) {
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
-        router.replace("/(auth)/LoginScreen");
+      if (!res) {
+        // Auth error already handled
+        return;
       }
 
       if (!res.ok) {
@@ -1015,23 +982,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 14,
-    borderTopWidth: 1.5,
+    paddingTop: 16,
+    borderTopWidth: 1,
     borderTopColor: "#F3F4F6",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 12,
   },
   statItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
     backgroundColor: "#F9FAFB",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
   },
   statText: {
-    fontSize: 12,
+    fontSize: 13,
     color: "#374151",
     fontWeight: "600",
   },

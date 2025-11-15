@@ -1,41 +1,19 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Tabs, useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import { useEffect } from "react";
-
-const TOKEN_KEY = "sf_token";
-const API_BASE = "http://10.0.2.2:3000";
+import { validateSession } from "../utils/auth";
 
 export default function TabsLayout() {
   const router = useRouter();
   useEffect(() => {
-    const checksession = async () => {
-      try {
-        const token = await SecureStore.getItemAsync(TOKEN_KEY);
-        if (!token) {
-          router.replace("/(auth)/LoginScreen");
-          return;
-        }
-
-        const res = await fetch(`${API_BASE}/api/me`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (res.status === 401 || res.status === 400) {
-          await SecureStore.deleteItemAsync(TOKEN_KEY);
-          router.replace("/(auth)/LoginScreen");
-          return;
-        }
-      } catch (e: any) {
-        console.log("error while checking session!");
+    const checkSession = async () => {
+      const isValid = await validateSession();
+      if (!isValid) {
+        router.replace("/(auth)/LoginScreen");
       }
     };
-    checksession();
-  }, []);
+    checkSession();
+  }, [router]);
 
   return (
     <Tabs
