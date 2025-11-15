@@ -23,15 +23,19 @@ import {
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import ProfileAvatar from "../components/ProfileAvtar";
-import { colors } from "../styles/colors";
-import { common } from "../styles/common";
+import { getColors } from "../styles/colors";
+import { getCommonStyles } from "../styles/common";
 import { API_BASE, authenticatedFetch, handleAuthError, logout as authLogout, TOKEN_KEY } from "../utils/auth";
 import { useToast } from "../contexts/ToastContext";
 import { extractErrorMessage, getSuccessMessage } from "../utils/toast";
+import { useTheme } from "../contexts/ThemeContext";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { theme, themeMode, setThemeMode, isDark } = useTheme();
+  const colors = getColors(isDark);
+  const common = getCommonStyles(isDark);
   const [user, setUser] = useState<{ 
     id?: number | string;
     name?: string; 
@@ -263,6 +267,8 @@ export default function ProfileScreen() {
     );
   };
 
+  const styles = getStyles(colors, isDark);
+
   if (loading && !user) {
     return (
       <SafeAreaProvider>
@@ -465,7 +471,7 @@ export default function ProfileScreen() {
               onPress={openEdit}
             >
               <View style={styles.actionLeft}>
-                <View style={[styles.actionIcon, { backgroundColor: "#F3F4F6" }]}>
+                <View style={[styles.actionIcon, { backgroundColor: colors.borderLight }]}>
                   <Feather name="edit-3" size={20} color={colors.primary} />
                 </View>
                 <View>
@@ -473,7 +479,7 @@ export default function ProfileScreen() {
                   <Text style={styles.actionSubtitle}>Update your name and contact info</Text>
                 </View>
               </View>
-              <Feather name="chevron-right" size={20} color="#9CA3AF" />
+              <Feather name="chevron-right" size={20} color={colors.textTertiary} />
             </Pressable>
 
             {/* Invite Friends */}
@@ -483,7 +489,7 @@ export default function ProfileScreen() {
               disabled={sharingInvite}
             >
               <View style={styles.actionLeft}>
-                <View style={[styles.actionIcon, { backgroundColor: "#EEF2FF" }]}>
+                <View style={[styles.actionIcon, { backgroundColor: isDark ? "#1E3A8A" : "#EEF2FF" }]}>
                   <Feather name="share-2" size={20} color={colors.primary} />
                 </View>
                 <View>
@@ -494,8 +500,54 @@ export default function ProfileScreen() {
               {sharingInvite ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <Feather name="chevron-right" size={20} color="#9CA3AF" />
+                <Feather name="chevron-right" size={20} color={colors.textTertiary} />
               )}
+            </Pressable>
+
+            {/* Theme Settings */}
+            <Pressable 
+              style={styles.actionCard}
+              onPress={() => {
+                Alert.alert(
+                  "Theme",
+                  "Choose your preferred theme",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Light",
+                      onPress: () => setThemeMode("light"),
+                      style: themeMode === "light" ? "default" : undefined,
+                    },
+                    {
+                      text: "Dark",
+                      onPress: () => setThemeMode("dark"),
+                      style: themeMode === "dark" ? "default" : undefined,
+                    },
+                    {
+                      text: "System",
+                      onPress: () => setThemeMode("system"),
+                      style: themeMode === "system" ? "default" : undefined,
+                    },
+                  ]
+                );
+              }}
+            >
+              <View style={styles.actionLeft}>
+                <View style={[styles.actionIcon, { backgroundColor: isDark ? "#1F2937" : "#FEF3C7" }]}>
+                  <Feather name={isDark ? "moon" : "sun"} size={20} color={isDark ? "#FBBF24" : "#F59E0B"} />
+                </View>
+                <View>
+                  <Text style={styles.actionTitle}>Theme</Text>
+                  <Text style={styles.actionSubtitle}>
+                    {themeMode === "system" 
+                      ? "System default" 
+                      : themeMode === "dark" 
+                      ? "Dark mode" 
+                      : "Light mode"}
+                  </Text>
+                </View>
+              </View>
+              <Feather name="chevron-right" size={20} color={colors.textTertiary} />
             </Pressable>
           </View>
 
@@ -609,17 +661,17 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => StyleSheet.create({
   profileCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     padding: 24,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    shadowColor: "#000",
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.2 : 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -634,23 +686,23 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 4,
   },
   profileContact: {
     fontSize: 15,
-    color: "#6B7280",
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   memberSince: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: colors.textTertiary,
     marginTop: 4,
   },
   editButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.borderLight,
   },
   statsSection: {
     marginBottom: 20,
@@ -658,7 +710,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 12,
   },
   statsGrid: {
@@ -669,11 +721,11 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: "47%",
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     alignItems: "center",
   },
   statIcon: {
@@ -687,22 +739,22 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 13,
-    color: "#6B7280",
+    color: colors.textSecondary,
     fontWeight: "500",
   },
   section: {
     marginBottom: 20,
   },
   infoCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     overflow: "hidden",
   },
   infoRow: {
@@ -718,27 +770,27 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 15,
-    color: "#6B7280",
+    color: colors.textSecondary,
     fontWeight: "500",
   },
   infoValue: {
     fontSize: 15,
-    color: "#111827",
+    color: colors.text,
     fontWeight: "600",
     flex: 1,
     textAlign: "right",
   },
   infoDivider: {
     height: 1,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.borderLight,
     marginLeft: 16,
   },
   actionCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -759,19 +811,19 @@ const styles = StyleSheet.create({
   actionTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 2,
   },
   actionSubtitle: {
     fontSize: 13,
-    color: "#6B7280",
+    color: colors.textSecondary,
   },
   signOutCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: isDark ? "#7F1D1D" : "#FEE2E2",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -788,26 +840,27 @@ const styles = StyleSheet.create({
   // modal styles
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: isDark ? "rgba(0,0,0,0.7)" : "rgba(0,0,0,0.4)",
     justifyContent: "center",
     alignItems: "center",
   },
   card: {
     width: "100%",
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     padding: 20,
   },
-  modalTitle: { fontSize: 18, fontWeight: "600", marginBottom: 16 },
-  subtitle: { opacity: 0.7, marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: "500", marginBottom: 6, color: "#111827" },
+  modalTitle: { fontSize: 18, fontWeight: "600", marginBottom: 16, color: colors.text },
+  subtitle: { opacity: 0.7, marginBottom: 16, color: colors.textSecondary },
+  label: { fontSize: 14, fontWeight: "500", marginBottom: 6, color: colors.text },
   input: {
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
+    color: colors.text,
     marginBottom: 12,
   },
   row: {
@@ -817,15 +870,15 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   btn: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 10 },
-  btnPrimary: { backgroundColor: "#111827" },
-  btnTextPrimary: { color: "#fff", fontWeight: "600" },
-  btnGhost: { backgroundColor: "#F3F4F6" },
-  btnTextGhost: { color: "#111827", fontWeight: "600" },
+  btnPrimary: { backgroundColor: colors.primary },
+  btnTextPrimary: { color: colors.white, fontWeight: "600" },
+  btnGhost: { backgroundColor: colors.borderLight },
+  btnTextGhost: { color: colors.text, fontWeight: "600" },
   skeletonBox: {
-    backgroundColor: "#E5E7EB",
+    backgroundColor: colors.border,
     borderRadius: 8,
   },
   skeletonCircle: {
-    backgroundColor: "#E5E7EB",
+    backgroundColor: colors.border,
   },
 });

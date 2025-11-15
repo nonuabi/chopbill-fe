@@ -19,8 +19,9 @@ import {
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import ListCard from "../../components/ListCard";
 import ProfileAvatar from "../../components/ProfileAvtar";
-import { colors } from "../../styles/colors";
-import { common } from "../../styles/common";
+import { useTheme } from "../../contexts/ThemeContext";
+import { getColors } from "../../styles/colors";
+import { getCommonStyles } from "../../styles/common";
 import { API_BASE, authenticatedFetch, TOKEN_KEY } from "../../utils/auth";
 import { useToast } from "../../contexts/ToastContext";
 import { extractErrorMessage, getSuccessMessage } from "../../utils/toast";
@@ -75,7 +76,11 @@ type Group = {
 export default function GroupDetailsScreen() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const common = getCommonStyles(isDark);
   const { id } = useLocalSearchParams<{ id: string }>();
+  const styles = getStyles(colors, isDark);
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -279,7 +284,7 @@ export default function GroupDetailsScreen() {
                 hitSlop={8}
                 style={styles.backBtn}
               >
-                <AntDesign name="left" size={20} color="#111827" />
+                <AntDesign name="left" size={20} color={colors.text} />
               </Pressable>
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={styles.headerTitle} numberOfLines={1}>
@@ -494,7 +499,7 @@ export default function GroupDetailsScreen() {
                       router.push(`/(tabs)/expenses?group=${id}`)
                     }
                   >
-                    <AntDesign name="plus" size={18} color="#fff" />
+                    <AntDesign name="plus" size={18} color={colors.white} />
                     <Text style={styles.actionBtnPrimaryText}>
                       Add Expense
                     </Text>
@@ -519,7 +524,7 @@ export default function GroupDetailsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -531,7 +536,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.borderLight,
   },
   shareBtn: {
     width: 36,
@@ -539,18 +544,18 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.borderLight,
     marginLeft: 8,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: "#6B7280",
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   loadingWrap: {
@@ -559,7 +564,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    color: "#6B7280",
+    color: colors.textSecondary,
     fontSize: 14,
   },
   errorWrap: {
@@ -571,17 +576,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   balanceCard: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: colors.borderLight,
     borderRadius: 16,
     padding: 20,
     alignItems: "center",
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
   },
   balanceLabel: {
     fontSize: 14,
-    color: "#6B7280",
+    color: colors.textSecondary,
     marginBottom: 8,
     fontWeight: "500",
   },
@@ -598,16 +603,16 @@ const styles = StyleSheet.create({
   },
   balanceSubtext: {
     fontSize: 13,
-    color: "#6B7280",
+    color: colors.textSecondary,
   },
   statsRow: {
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
   },
   statItem: {
     flex: 1,
@@ -615,18 +620,18 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: colors.border,
     marginHorizontal: 12,
   },
   statValue: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: "#6B7280",
+    color: colors.textSecondary,
   },
   section: {
     marginBottom: 24,
@@ -640,7 +645,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 12,
   },
   seeAllText: {
@@ -649,10 +654,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     overflow: "hidden",
   },
   memberRow: {
@@ -663,7 +668,7 @@ const styles = StyleSheet.create({
   },
   memberRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: colors.borderLight,
   },
   memberInfo: {
     marginLeft: 12,
@@ -678,11 +683,11 @@ const styles = StyleSheet.create({
   memberName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#111827",
+    color: colors.text,
     flex: 1,
   },
   settledBadge: {
-    backgroundColor: "#F0FDF4",
+    backgroundColor: isDark ? "#1A3A2E" : "#F0FDF4",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -696,7 +701,7 @@ const styles = StyleSheet.create({
   },
   memberEmail: {
     fontSize: 13,
-    color: "#6B7280",
+    color: colors.textSecondary,
   },
   memberBalance: {
     alignItems: "flex-end",
@@ -712,7 +717,7 @@ const styles = StyleSheet.create({
     color: colors.danger,
   },
   muted: {
-    color: "#6B7280",
+    color: colors.textSecondary,
     fontSize: 14,
     padding: 16,
     textAlign: "center",
@@ -735,17 +740,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   actionBtnSecondary: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.borderLight,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
   },
   actionBtnPrimaryText: {
-    color: "#fff",
+    color: colors.white,
     fontWeight: "600",
     fontSize: 16,
   },
   actionBtnSecondaryText: {
-    color: "#111827",
+    color: colors.text,
     fontWeight: "600",
     fontSize: 16,
   },

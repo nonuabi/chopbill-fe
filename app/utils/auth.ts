@@ -26,7 +26,8 @@ export const buildAuthHeader = (token?: string | null) => {
 
 export const TOKEN_KEY = "sf_token";
 
-export const API_BASE = "https://chopbill-be.onrender.com";
+export const API_BASE = "http://10.0.2.2:3000";
+// export const API_BASE = "https://chopbill-be.onrender.com";
 
 /**
  * Checks if a response status indicates an authentication error

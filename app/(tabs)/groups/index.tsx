@@ -1,5 +1,5 @@
 import Feather from "@expo/vector-icons/Feather";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -19,8 +19,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { colors } from "../../styles/colors";
-import { common } from "../../styles/common";
+import { useTheme } from "../../contexts/ThemeContext";
+import { getColors } from "../../styles/colors";
+import { getCommonStyles } from "../../styles/common";
 import { API_BASE, authenticatedFetch, TOKEN_KEY } from "../../utils/auth";
 import { useToast } from "../../contexts/ToastContext";
 import { extractErrorMessage, getSuccessMessage } from "../../utils/toast";
@@ -93,6 +94,11 @@ const formatDate = (dateString?: string): string => {
 export default function GroupsScreen() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const common = getCommonStyles(isDark);
+  const styles = getStyles(colors, isDark);
+  const params = useLocalSearchParams<{ create?: string }>();
   const [groups, setGroups] = useState<
     {
       id: string;
@@ -189,6 +195,15 @@ export default function GroupsScreen() {
       }
     }
   }, [refreshing]);
+
+  // Open modal if create parameter is present
+  useEffect(() => {
+    if (params.create === "true") {
+      setIsModalOpen(true);
+      // Clear the parameter from URL
+      router.setParams({ create: undefined });
+    }
+  }, [params.create]);
 
   useFocusEffect(
     useCallback(() => {
@@ -336,7 +351,7 @@ export default function GroupsScreen() {
               onPress={() => setIsModalOpen(true)}
               android_ripple={{ color: "rgba(255,255,255,0.2)" }}
             >
-              <Feather name="plus" size={18} color="#fff" />
+              <Feather name="plus" size={18} color={colors.white} />
               <Text style={styles.btnText}>Create</Text>
             </Pressable>
           </View>
@@ -344,11 +359,11 @@ export default function GroupsScreen() {
           {/* Search Bar */}
           {groups.length > 0 && (
             <View style={styles.searchContainer}>
-              <Feather name="search" size={18} color="#9CA3AF" style={styles.searchIcon} />
+              <Feather name="search" size={18} color={colors.textTertiary} style={styles.searchIcon} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search groups by name or description..."
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textTertiary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoCapitalize="none"
@@ -360,7 +375,7 @@ export default function GroupsScreen() {
                   style={styles.clearButton}
                   hitSlop={8}
                 >
-                  <Feather name="x" size={18} color="#9CA3AF" />
+                  <Feather name="x" size={18} color={colors.textTertiary} />
                 </Pressable>
               )}
             </View>
@@ -376,7 +391,7 @@ export default function GroupsScreen() {
             searchQuery ? (
               <View style={styles.emptyStateContainer}>
                 <View style={styles.emptyState}>
-                  <Feather name="search" size={48} color="#D1D5DB" />
+                  <Feather name="search" size={48} color={colors.border} />
                   <Text style={styles.emptyStateTitle}>No groups found</Text>
                   <Text style={styles.emptyStateText}>
                     No groups match "{searchQuery}". Try a different search term.
@@ -393,7 +408,7 @@ export default function GroupsScreen() {
               <View style={styles.emptyStateContainer}>
                 <View style={styles.emptyState}>
                   <View style={styles.emptyStateIcon}>
-                    <Feather name="users" size={64} color="#D1D5DB" />
+                    <Feather name="users" size={64} color={colors.border} />
                   </View>
                   <Text style={styles.emptyStateTitle}>No groups yet</Text>
                   <Text style={styles.emptyStateText}>
@@ -403,7 +418,7 @@ export default function GroupsScreen() {
                     style={styles.emptyStateButton}
                     onPress={() => setIsModalOpen(true)}
                   >
-                    <Feather name="plus" size={18} color="#fff" />
+                    <Feather name="plus" size={18} color={colors.white} />
                     <Text style={styles.emptyStateButtonText}>Create Group</Text>
                   </Pressable>
                 </View>
@@ -429,7 +444,7 @@ export default function GroupsScreen() {
                 return (
                   <Pressable
                     onPress={() => router.push(`/(tabs)/groups/${item.id}`)}
-                    android_ripple={{ color: "#E5E7EB" }}
+                    android_ripple={{ color: isDark ? colors.borderLight : "#E5E7EB" }}
                     style={({ pressed }) => [
                       styles.item,
                       pressed && styles.itemPressed,
@@ -538,19 +553,19 @@ export default function GroupsScreen() {
                       {/* Footer Section */}
                       <View style={styles.itemFooter}>
                         <View style={styles.statItem}>
-                          <Feather name="users" size={14} color="#6B7280" />
+                          <Feather name="users" size={14} color={colors.textSecondary} />
                           <Text style={styles.statText}>
                             {item?.member_count || 0} {item?.member_count === 1 ? "member" : "members"}
                           </Text>
                         </View>
                         <View style={styles.statItem}>
-                          <Feather name="file-text" size={14} color="#6B7280" />
+                          <Feather name="file-text" size={14} color={colors.textSecondary} />
                           <Text style={styles.statText}>
                             {expenseCount} {expenseCount === 1 ? "expense" : "expenses"}
                           </Text>
                         </View>
                         <View style={styles.statItem}>
-                          <Feather name="trending-up" size={14} color="#6B7280" />
+                          <Feather name="trending-up" size={14} color={colors.textSecondary} />
                           <Text style={styles.statText}>
                             {formatCurrency(total)} total
                           </Text>
@@ -596,7 +611,7 @@ export default function GroupsScreen() {
                     style={styles.input}
                     value={groupName}
                     onChangeText={setGroupName}
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.textTertiary}
                   />
 
                   <Text style={styles.label}> Description (Optional)</Text>
@@ -605,7 +620,7 @@ export default function GroupsScreen() {
                     style={styles.input}
                     value={groupdesciption}
                     onChangeText={setGroupDiscription}
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.textTertiary}
                   />
 
                   <Text style={[styles.label, { marginTop: 8 }]}>Members</Text>
@@ -640,7 +655,7 @@ export default function GroupsScreen() {
                     onChangeText={setMemberQuery}
                     autoCapitalize="none"
                     keyboardType="email-address"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.textTertiary}
                   />
 
                   {/* Search results */}
@@ -714,7 +729,7 @@ export default function GroupsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -724,12 +739,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: "800",
-    color: "#111827",
+    color: colors.text,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 14,
-    color: "#6B7280",
+    color: colors.textSecondary,
     marginTop: 6,
     fontWeight: "500",
   },
@@ -741,26 +756,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
-    shadowColor: "#000",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
+    shadowOpacity: isDark ? 0.3 : 0.12,
     shadowRadius: 6,
     elevation: 3,
   },
-  btnText: { color: "#fff", fontWeight: "600", fontSize: 14 },
+  btnText: { color: colors.white, fontWeight: "600", fontSize: 14 },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F9FAFB",
+    backgroundColor: colors.borderLight,
     borderWidth: 1.5,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     marginBottom: 18,
     minHeight: 48,
-    shadowColor: "#000",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
+    shadowOpacity: isDark ? 0.1 : 0.03,
     shadowRadius: 2,
     elevation: 1,
   },
@@ -770,14 +785,14 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: "#111827",
+    color: colors.text,
     paddingVertical: 10,
     fontWeight: "400",
   },
   clearButton: {
     padding: 6,
     borderRadius: 12,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: colors.border,
   },
   loadingContainer: {
     flex: 1,
@@ -787,7 +802,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    color: "#6B7280",
+    color: colors.textSecondary,
     fontSize: 14,
   },
   listContent: {
@@ -797,13 +812,13 @@ const styles = StyleSheet.create({
     height: 14,
   },
   item: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: "#E5E7EB",
-    shadowColor: "#000",
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: isDark ? 0.2 : 0.08,
     shadowRadius: 8,
     elevation: 2,
     overflow: "hidden",
@@ -811,9 +826,9 @@ const styles = StyleSheet.create({
   itemPressed: {
     opacity: 0.95,
     transform: [{ scale: 0.98 }],
-    backgroundColor: "#F9FAFB",
+    backgroundColor: colors.borderLight,
     borderColor: colors.primary,
-    shadowOpacity: 0.12,
+    shadowOpacity: isDark ? 0.3 : 0.12,
   },
   itemContent: {
     padding: 14,
@@ -861,13 +876,13 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 3,
     letterSpacing: -0.2,
   },
   itemDescription: {
     fontSize: 12,
-    color: "#6B7280",
+    color: colors.textSecondary,
     marginTop: 2,
     fontWeight: "400",
   },
@@ -888,11 +903,11 @@ const styles = StyleSheet.create({
     color: colors.danger,
   },
   balanceNeutral: {
-    color: "#6B7280",
+    color: colors.textSecondary,
   },
   balanceLabel: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: colors.textTertiary,
     textTransform: "capitalize",
     fontWeight: "500",
   },
@@ -900,7 +915,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#F0FDF4",
+    backgroundColor: isDark ? "#1A3A2E" : "#F0FDF4",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
@@ -917,12 +932,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
+    borderTopColor: colors.borderLight,
     minHeight: 32, // Consistent height without last expense text
   },
   emptyMembersText: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: colors.textTertiary,
     fontStyle: "italic",
   },
   membersAvatars: {
@@ -931,7 +946,7 @@ const styles = StyleSheet.create({
   },
   avatarWrapper: {
     borderWidth: 2,
-    borderColor: "#fff",
+    borderColor: colors.cardBackground,
     borderRadius: 18,
     overflow: "hidden",
   },
@@ -939,16 +954,16 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: colors.border,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#fff",
+    borderColor: colors.cardBackground,
   },
   avatarOverflowText: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#6B7280",
+    color: colors.textSecondary,
   },
   lastExpenseContainer: {
     minHeight: 16, // Consistent height for last expense text area
@@ -1023,14 +1038,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: colors.borderLight,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
   },
   statText: {
     fontSize: 11,
-    color: "#374151",
+    color: colors.textSecondary,
     fontWeight: "600",
   },
   emptyStateContainer: {
@@ -1048,12 +1063,12 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 8,
   },
   emptyStateText: {
     fontSize: 14,
-    color: "#6B7280",
+    color: colors.textSecondary,
     textAlign: "center",
     marginBottom: 24,
     lineHeight: 20,
@@ -1068,7 +1083,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyStateButtonText: {
-    color: "#fff",
+    color: colors.white,
     fontWeight: "600",
     fontSize: 14,
   },
@@ -1076,28 +1091,28 @@ const styles = StyleSheet.create({
   // Modal styles
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: isDark ? "rgba(0,0,0,0.7)" : "rgba(0,0,0,0.4)",
     justifyContent: "center",
     alignItems: "center",
   },
   modalCard: {
     width: "90%",
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     padding: 20,
   },
-  modalTitle: { fontSize: 18, fontWeight: "600", marginBottom: 4 },
-  modalSubtitle: { opacity: 0.7, marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: "500", marginBottom: 6, color: "#111827" },
+  modalTitle: { fontSize: 18, fontWeight: "600", marginBottom: 4, color: colors.text },
+  modalSubtitle: { opacity: 0.7, marginBottom: 16, color: colors.textSecondary },
+  label: { fontSize: 14, fontWeight: "500", marginBottom: 6, color: colors.text },
   input: {
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
     marginBottom: 12,
-    color: "#111827",
+    color: colors.text,
   },
   row: {
     flexDirection: "row",
@@ -1106,10 +1121,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   modalBtn: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10 },
-  btnPrimary: { backgroundColor: "#111827" },
-  btnTextPrimary: { color: "#fff", fontWeight: "600" },
-  btnGhost: { backgroundColor: "#F3F4F6" },
-  btnTextGhost: { color: "#111827", fontWeight: "600" },
+  btnPrimary: { backgroundColor: colors.primary },
+  btnTextPrimary: { color: colors.white, fontWeight: "600" },
+  btnGhost: { backgroundColor: colors.borderLight },
+  btnTextGhost: { color: colors.text, fontWeight: "600" },
   chipsWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -1119,34 +1134,35 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.borderLight,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 10,
     gap: 8,
   },
-  chipText: { color: "#111827" },
-  chipRemove: { marginLeft: 4, color: "#6B7280", fontWeight: "700" },
+  chipText: { color: colors.text },
+  chipRemove: { marginLeft: 4, color: colors.textSecondary, fontWeight: "700" },
   resultsBox: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     borderRadius: 8,
     overflow: "hidden",
     marginBottom: 12,
+    backgroundColor: colors.cardBackground,
   },
   resultRow: {
     paddingVertical: 10,
     paddingHorizontal: 12,
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: colors.borderLight,
   },
-  resultName: { fontWeight: "600", color: "#111827" },
-  resultEmail: { color: "#6B7280" },
+  resultName: { fontWeight: "600", color: colors.text },
+  resultEmail: { color: colors.textSecondary },
   resultEmpty: { padding: 12, gap: 10 },
-  resultEmptyText: { color: "#6B7280", marginBottom: 8 },
+  resultEmptyText: { color: colors.textSecondary, marginBottom: 8 },
   hintText: { 
-    color: "#9CA3AF", 
+    color: colors.textTertiary, 
     fontSize: 12, 
     fontStyle: "italic",
     textAlign: "center"

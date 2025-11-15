@@ -1,6 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors } from "../styles/colors";
+import { useTheme } from "../contexts/ThemeContext";
+import { getColors } from "../styles/colors";
 import ProfileAvatar from "./ProfileAvtar";
 
 type ListCardVariant = "balance" | "expense";
@@ -37,6 +38,9 @@ const ListCard: React.FC<ListCardProps> = ({
   onLongPress,
   disabled,
 }) => {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const styles = getStyles(colors);
   const isPositive = direction === "+";
 
   return (
@@ -45,7 +49,7 @@ const ListCard: React.FC<ListCardProps> = ({
       onPress={onPress}
       onLongPress={onLongPress}
       disabled={disabled}
-      android_ripple={{ color: "#E9ECF1", borderless: false }}
+      android_ripple={{ color: isDark ? colors.borderLight : "#E9ECF1", borderless: false }}
       style={({ pressed }) => [
         styles.cardContainer,
         variant === "expense" && styles.cardExpense,
@@ -96,17 +100,17 @@ const ListCard: React.FC<ListCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof getColors>) => StyleSheet.create({
   cardContainer: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#FFFFFF",
+    borderColor: colors.border,
+    backgroundColor: colors.cardBackground,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 16,
     borderRadius: 14,
-    shadowColor: "#000",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
@@ -121,7 +125,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   cardExpense: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.cardBackground,
   },
   leftSection: {
     flexDirection: "row",
@@ -135,12 +139,12 @@ const styles = StyleSheet.create({
   titleText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#111827",
+    color: colors.text,
   },
   subtitleText: {
     marginTop: 2,
     fontSize: 12,
-    color: "#717182",
+    color: colors.textSecondary,
   },
   rightSection: {
     alignItems: "flex-end",
@@ -148,6 +152,7 @@ const styles = StyleSheet.create({
   amountText: {
     fontSize: 18,
     fontWeight: "700",
+    color: colors.text,
   },
   amountPositive: {
     color: colors.green,
@@ -157,7 +162,7 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    color: "#717182",
+    color: colors.textSecondary,
   },
   moneyBadge: {
     width: 40,
@@ -166,8 +171,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#F9FAFB",
+    borderColor: colors.border,
+    backgroundColor: colors.borderLight,
   },
   moneyBadgeText: {
     fontSize: 18,

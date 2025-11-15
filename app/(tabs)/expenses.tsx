@@ -18,8 +18,9 @@ import {
 import DropDownPicker from "react-native-dropdown-picker";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import FormInput from "../components/FormInput";
-import { colors } from "../styles/colors";
-import { common } from "../styles/common";
+import { useTheme } from "../contexts/ThemeContext";
+import { getColors } from "../styles/colors";
+import { getCommonStyles } from "../styles/common";
 import { API_BASE, authenticatedFetch, TOKEN_KEY } from "../utils/auth";
 import { useToast } from "../contexts/ToastContext";
 import { extractErrorMessage, getSuccessMessage } from "../utils/toast";
@@ -27,7 +28,11 @@ import { extractErrorMessage, getSuccessMessage } from "../utils/toast";
 export default function ExpensesScreen() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const common = getCommonStyles(isDark);
   const { group: groupParam } = useLocalSearchParams<{ group?: string }>();
+  const styles = getStyles(colors, isDark);
   
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -382,15 +387,18 @@ export default function ExpensesScreen() {
                     style={[styles.dropdown, styles.inputSurface]}
                     dropDownContainerStyle={[styles.dropdownContainer]}
                     labelStyle={styles.dropdownLabel}
+                    placeholderStyle={styles.dropdownPlaceholder}
+                    textStyle={styles.dropdownText}
                     selectedItemContainerStyle={
                       styles.dropdownSelectedContainer
                     }
                     selectedItemLabelStyle={styles.dropdownSelectedLabel}
+                    listItemLabelStyle={styles.dropdownText}
                     ArrowUpIconComponent={() => (
-                      <Text style={{ color: "#6B7280" }}>▲</Text>
+                      <Text style={{ color: colors.textSecondary }}>▲</Text>
                     )}
                     ArrowDownIconComponent={() => (
-                      <Text style={{ color: "#6B7280" }}>▼</Text>
+                      <Text style={{ color: colors.textSecondary }}>▼</Text>
                     )}
                   />
                 </View>
@@ -425,15 +433,18 @@ export default function ExpensesScreen() {
                     style={[styles.dropdown, styles.inputSurface]}
                     dropDownContainerStyle={[styles.dropdownContainer]}
                     labelStyle={styles.dropdownLabel}
+                    placeholderStyle={styles.dropdownPlaceholder}
+                    textStyle={styles.dropdownText}
                     selectedItemContainerStyle={
                       styles.dropdownSelectedContainer
                     }
                     selectedItemLabelStyle={styles.dropdownSelectedLabel}
+                    listItemLabelStyle={styles.dropdownText}
                     ArrowUpIconComponent={() => (
-                      <Text style={{ color: "#6B7280" }}>▲</Text>
+                      <Text style={{ color: colors.textSecondary }}>▲</Text>
                     )}
                     ArrowDownIconComponent={() => (
-                      <Text style={{ color: "#6B7280" }}>▼</Text>
+                      <Text style={{ color: colors.textSecondary }}>▼</Text>
                     )}
                   />
                 </View>
@@ -518,7 +529,7 @@ export default function ExpensesScreen() {
                 <View style={[styles.inputSurface, styles.notesInput]}>
                   <TextInput
                     placeholder="Add any additional notes..."
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.textTertiary}
                     style={styles.notesText}
                     value={notes}
                     onChangeText={setNotes}
@@ -532,7 +543,7 @@ export default function ExpensesScreen() {
               <Pressable
                 onPress={handleSubmit}
                 disabled={saving}
-                android_ripple={{ color: "#E5E7EB" }}
+                android_ripple={{ color: isDark ? colors.borderLight : "#E5E7EB" }}
                 style={({ pressed }) => [
                   styles.btn,
                   pressed && styles.btnPressed,
@@ -540,7 +551,7 @@ export default function ExpensesScreen() {
                 ]}
               >
                 {saving ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={colors.white} />
                 ) : (
                   <Text style={styles.btnText}>Add Expense</Text>
                 )}
@@ -553,7 +564,7 @@ export default function ExpensesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -563,36 +574,36 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: "#6B7280",
+    color: colors.textSecondary,
   },
   closeBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.borderLight,
     alignItems: "center",
     justifyContent: "center",
   },
   closeBtnText: {
     fontSize: 20,
-    color: "#6B7280",
+    color: colors.textSecondary,
     fontWeight: "600",
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    shadowColor: "#000",
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.2 : 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -600,16 +611,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 8,
-    color: "#111827",
+    color: colors.text,
   },
   inputSurface: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 12,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
   },
   error: {
     color: colors.danger,
@@ -618,28 +629,35 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   hintMuted: {
-    color: "#6B7280",
+    color: colors.textSecondary,
     fontSize: 14,
   },
   // Dropdown styles
   dropdown: {
     borderWidth: 0,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
   },
   dropdownContainer: {
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 12,
     overflow: "hidden",
+    backgroundColor: colors.cardBackground,
   },
   dropdownLabel: {
-    color: "#111827",
+    color: colors.text,
+  },
+  dropdownPlaceholder: {
+    color: colors.textTertiary,
+  },
+  dropdownText: {
+    color: colors.text,
   },
   dropdownSelectedContainer: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.borderLight,
   },
   dropdownSelectedLabel: {
-    color: "#111827",
+    color: colors.text,
     fontWeight: "600",
   },
   // Person rows
@@ -661,7 +679,7 @@ const styles = StyleSheet.create({
   },
   personLabel: {
     fontSize: 16,
-    color: "#111827",
+    color: colors.text,
     fontWeight: "500",
   },
   payerBadge: {
@@ -671,7 +689,7 @@ const styles = StyleSheet.create({
   },
   splitAmount: {
     fontSize: 13,
-    color: "#6B7280",
+    color: colors.textSecondary,
     marginTop: 2,
   },
   checkCircle: {
@@ -679,32 +697,32 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: "#111827",
+    borderColor: colors.text,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
   },
   checkCircleActive: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
   checkIcon: {
-    color: "#fff",
+    color: colors.white,
     fontWeight: "700",
     fontSize: 16,
   },
   splitSummary: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: colors.borderLight,
     borderRadius: 8,
     padding: 12,
     marginTop: 8,
     marginBottom: 4,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
   },
   splitSummaryText: {
     fontSize: 14,
-    color: "#111827",
+    color: colors.text,
     fontWeight: "600",
     textAlign: "center",
   },
@@ -713,7 +731,7 @@ const styles = StyleSheet.create({
   },
   notesText: {
     fontSize: 16,
-    color: "#111827",
+    color: colors.text,
     minHeight: 80,
   },
   btn: {
@@ -724,9 +742,9 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     marginTop: 8,
-    shadowColor: "#000",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: isDark ? 0.3 : 0.15,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -739,7 +757,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
   },
   btnText: {
-    color: "#fff",
+    color: colors.white,
     fontWeight: "700",
     fontSize: 16,
   },

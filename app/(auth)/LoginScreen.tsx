@@ -14,8 +14,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { colors } from "../styles/colors";
-import { common } from "../styles/common";
+import { useTheme } from "../contexts/ThemeContext";
+import { getColors } from "../styles/colors";
+import { getCommonStyles } from "../styles/common";
 import { useToast } from "../contexts/ToastContext";
 import { extractErrorMessage } from "../utils/toast";
 import { API_BASE, TOKEN_KEY } from "../utils/auth";
@@ -33,12 +34,16 @@ const isPhoneNumber = (v: string) => {
 export default function LoginScreen() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const common = getCommonStyles(isDark);
   const [login, setLogin] = useState(""); // Can be email or phone
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const styles = getStyles(colors, isDark);
 
   const loginType = useMemo(() => {
     if (isEmail(login)) return "email";
@@ -159,7 +164,7 @@ export default function LoginScreen() {
                 <Ionicons 
                   name={loginType === "email" ? "mail-outline" : loginType === "phone" ? "call-outline" : "person-outline"} 
                   size={20} 
-                  color="#9CA3AF" 
+                  color={colors.textTertiary} 
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -178,7 +183,7 @@ export default function LoginScreen() {
                     shouldShowError("login") && styles.inputError
                   ]}
                   textContentType="username"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textTertiary}
                 />
               </View>
               {shouldShowError("login") && (
@@ -203,7 +208,7 @@ export default function LoginScreen() {
                 <Ionicons 
                   name="lock-closed-outline" 
                   size={20} 
-                  color="#9CA3AF" 
+                  color={colors.textTertiary} 
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -221,7 +226,7 @@ export default function LoginScreen() {
                     shouldShowError("password") && styles.inputError,
                   ]}
                   textContentType="password"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textTertiary}
                 />
                 <Pressable
                   style={styles.eyeBtn}
@@ -230,7 +235,7 @@ export default function LoginScreen() {
                   <Ionicons 
                     name={showPassword ? "eye-off-outline" : "eye-outline"} 
                     size={20} 
-                    color="#6B7280" 
+                    color={colors.textSecondary} 
                   />
                 </Pressable>
               </View>
@@ -252,11 +257,11 @@ export default function LoginScreen() {
               ]}
             >
               {loading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.white} />
               ) : (
                 <>
                   <Text style={styles.ctaText}>Log in</Text>
-                  <Ionicons name="arrow-forward" size={20} color="#fff" style={styles.ctaIcon} />
+                  <Ionicons name="arrow-forward" size={20} color={colors.white} style={styles.ctaIcon} />
                 </>
               )}
             </Pressable>
@@ -276,7 +281,7 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => StyleSheet.create({
   scrollContent: {
     paddingTop: 40,
     paddingBottom: 100,
@@ -292,35 +297,35 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.borderLight,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
   },
   title: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 8,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: "#6B7280",
+    color: colors.textSecondary,
     textAlign: "center",
     lineHeight: 22,
   },
   formCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    shadowColor: "#000",
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.2 : 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -330,16 +335,16 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.border,
     borderRadius: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.background,
     paddingHorizontal: 12,
   },
   inputIcon: {
@@ -348,7 +353,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: "#111827",
+    color: colors.text,
     paddingVertical: 14,
   },
   flex: {
@@ -405,7 +410,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   ctaText: {
-    color: "#fff",
+    color: colors.white,
     fontWeight: "600",
     fontSize: 16,
   },
@@ -419,7 +424,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: "#6B7280",
+    color: colors.textSecondary,
   },
   footerLink: {
     fontSize: 14,

@@ -15,8 +15,9 @@ import {
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import ListCard from "../components/ListCard";
-import { colors } from "../styles/colors";
-import { common } from "../styles/common";
+import { useTheme } from "../contexts/ThemeContext";
+import { getColors } from "../styles/colors";
+import { getCommonStyles } from "../styles/common";
 import { API_BASE, authenticatedFetch } from "../utils/auth";
 
 type RecentExpense = {
@@ -39,9 +40,13 @@ type RecentExpense = {
 
 export default function AllExpensesScreen() {
   const router = useRouter();
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const common = getCommonStyles(isDark);
   const [expenses, setExpenses] = useState<RecentExpense[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const styles = getStyles(colors, isDark);
 
   const fetchExpenses = useCallback(async () => {
     try {
@@ -122,7 +127,7 @@ export default function AllExpensesScreen() {
             hitSlop={8}
             style={styles.backBtn}
           >
-            <AntDesign name="left" size={20} color="#111827" />
+            <AntDesign name="left" size={20} color={colors.text} />
           </Pressable>
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={styles.headerTitle}>All Expenses</Text>
@@ -157,7 +162,7 @@ export default function AllExpensesScreen() {
           {expenses.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyStateIcon}>
-                <Ionicons name="receipt-outline" size={64} color="#9CA3AF" />
+                <Ionicons name="receipt-outline" size={64} color={colors.textTertiary} />
               </View>
               <Text style={styles.emptyStateTitle}>No expenses yet</Text>
               <Text style={styles.emptyStateText}>
@@ -195,7 +200,7 @@ export default function AllExpensesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -208,17 +213,17 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.borderLight,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: "#6B7280",
+    color: colors.textSecondary,
   },
   loadingContainer: {
     flex: 1,
@@ -228,16 +233,16 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    color: "#6B7280",
+    color: colors.textSecondary,
     fontSize: 14,
   },
   summaryCard: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: colors.borderLight,
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
   },
   summaryCardContent: {
     flexDirection: "row",
@@ -249,7 +254,7 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 13,
-    color: "#6B7280",
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   summaryAmount: {
@@ -258,12 +263,12 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   emptyState: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: colors.borderLight,
     borderRadius: 16,
     padding: 48,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     marginTop: 20,
   },
   emptyStateIcon: {
@@ -272,11 +277,11 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 8,
   },
   emptyStateText: {
-    color: "#6B7280",
+    color: colors.textSecondary,
     fontSize: 14,
     textAlign: "center",
     marginBottom: 16,
@@ -289,7 +294,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   emptyStateButtonText: {
-    color: "#fff",
+    color: colors.white,
     fontWeight: "600",
     fontSize: 14,
   },

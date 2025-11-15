@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 import Feather from "@expo/vector-icons/Feather";
-import { colors } from "../styles/colors";
+import { useTheme } from "../contexts/ThemeContext";
+import { getColors } from "../styles/colors";
 
 type ToastType = "success" | "error" | "info" | "warning";
 
@@ -20,6 +21,8 @@ export default function Toast({
   duration = 3000,
   onHide,
 }: ToastProps) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
   const slideAnim = useRef(new Animated.Value(-100)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -83,40 +86,73 @@ export default function Toast({
     }
   };
 
-  const getColors = () => {
-    switch (type) {
-      case "success":
-        return {
-          bg: "#F0FDF4",
-          border: "#B9F8CF",
-          icon: colors.green,
-          text: "#166534",
-        };
-      case "error":
-        return {
-          bg: "#FEF2F2",
-          border: "#FECACA",
-          icon: colors.danger,
-          text: "#991B1B",
-        };
-      case "warning":
-        return {
-          bg: "#FFFBEB",
-          border: "#FDE68A",
-          icon: "#D97706",
-          text: "#92400E",
-        };
-      default:
-        return {
-          bg: "#EFF6FF",
-          border: "#BFDBFE",
-          icon: colors.primary,
-          text: "#1E40AF",
-        };
+  const getToastColors = () => {
+    if (isDark) {
+      switch (type) {
+        case "success":
+          return {
+            bg: "#1A3A2E",
+            border: "#2D5A47",
+            icon: colors.green,
+            text: colors.green,
+          };
+        case "error":
+          return {
+            bg: "#3A1F1F",
+            border: "#5A2D2D",
+            icon: colors.danger,
+            text: colors.danger,
+          };
+        case "warning":
+          return {
+            bg: "#3A2F1A",
+            border: "#5A4A2D",
+            icon: "#FBBF24",
+            text: "#FBBF24",
+          };
+        default:
+          return {
+            bg: "#1E3A5F",
+            border: "#2D4A7F",
+            icon: colors.accent,
+            text: colors.accent,
+          };
+      }
+    } else {
+      switch (type) {
+        case "success":
+          return {
+            bg: "#F0FDF4",
+            border: "#B9F8CF",
+            icon: colors.green,
+            text: "#166534",
+          };
+        case "error":
+          return {
+            bg: "#FEF2F2",
+            border: "#FECACA",
+            icon: colors.danger,
+            text: "#991B1B",
+          };
+        case "warning":
+          return {
+            bg: "#FFFBEB",
+            border: "#FDE68A",
+            icon: "#D97706",
+            text: "#92400E",
+          };
+        default:
+          return {
+            bg: "#EFF6FF",
+            border: "#BFDBFE",
+            icon: colors.primary,
+            text: "#1E40AF",
+          };
+      }
     }
   };
 
-  const colorsConfig = getColors();
+  const colorsConfig = getToastColors();
 
   return (
     <Animated.View
@@ -127,6 +163,7 @@ export default function Toast({
           opacity: opacityAnim,
           backgroundColor: colorsConfig.bg,
           borderColor: colorsConfig.border,
+          shadowOpacity: isDark ? 0.3 : 0.15,
         },
       ]}
     >
@@ -152,7 +189,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 8,
     zIndex: 9999,

@@ -1,13 +1,18 @@
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import * as SecureStore from "expo-secure-store";
-import { common } from "./styles/common";
+import { getColors } from "./styles/colors";
+import { getCommonStyles } from "./styles/common";
 import { TOKEN_KEY, validateSession } from "./utils/auth";
 
 export default function Index() {
   const [checking, setChecking] = useState(true);
   const router = useRouter();
+  // Use light theme as default since ThemeProvider wraps this later
+  const colors = getColors(false);
+  const common = getCommonStyles(false);
+  const styles = getStyles(colors);
 
   useEffect(() => {
     let isMounted = true;
@@ -54,12 +59,19 @@ export default function Index() {
 
   if (checking) {
     return (
-      <View style={[common.container, common.centered]}>
-        <ActivityIndicator />
-        <Text style={{ marginTop: 8 }}>Checking session...</Text>
+      <View style={[common.container, common.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator color={colors.primary} />
+        <Text style={styles.checkingText}>Checking session...</Text>
       </View>
     );
   }
 
   return null;
 }
+
+const getStyles = (colors: ReturnType<typeof getColors>) => StyleSheet.create({
+  checkingText: {
+    marginTop: 8,
+    color: colors.textSecondary,
+  },
+});

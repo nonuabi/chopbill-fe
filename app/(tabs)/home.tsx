@@ -16,8 +16,9 @@ import {
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import ListCard from "../components/ListCard";
-import { colors } from "../styles/colors";
-import { common } from "../styles/common";
+import { useTheme } from "../contexts/ThemeContext";
+import { getColors } from "../styles/colors";
+import { getCommonStyles } from "../styles/common";
 import { API_BASE, authenticatedFetch, TOKEN_KEY } from "../utils/auth";
 
 type OutstandingBalance = {
@@ -59,6 +60,9 @@ type DashboardData = {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const common = getCommonStyles(isDark);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -136,6 +140,8 @@ export default function HomeScreen() {
   };
 
   const MySeparator = () => <View style={{ height: 10 }} />;
+
+  const styles = getStyles(colors, isDark);
 
   if (loading) {
     return (
@@ -284,7 +290,7 @@ export default function HomeScreen() {
             </Pressable>
             <Pressable
               style={styles.quickActionBtn}
-              onPress={() => router.push("/(tabs)/groups")}
+              onPress={() => router.push("/(tabs)/groups?create=true")}
             >
               <View style={[styles.quickActionIcon, { backgroundColor: "#FEF3C7" }]}>
                 <Ionicons name="add-circle" size={20} color="#F59E0B" />
@@ -395,7 +401,7 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => StyleSheet.create({
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -403,7 +409,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    color: "#6B7280",
+    color: colors.textSecondary,
     fontSize: 14,
   },
   welcomeSection: {
@@ -414,24 +420,24 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 16,
-    color: "#6B7280",
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   welcomeName: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
   },
   fabButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.primary,
+    backgroundColor: isDark ? colors.accent : colors.primary,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: isDark ? 0.3 : 0.15,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -439,21 +445,21 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
-    shadowColor: "#000",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: isDark ? 0.2 : 0.1,
     shadowRadius: 8,
     elevation: 3,
   },
   netBalancePositive: {
-    backgroundColor: "#F0FDF4",
+    backgroundColor: isDark ? "#1A3A2E" : "#F0FDF4",
     borderWidth: 1,
-    borderColor: "#B9F8CF",
+    borderColor: isDark ? "#2D5A47" : "#B9F8CF",
   },
   netBalanceNegative: {
-    backgroundColor: "#FEF2F2",
+    backgroundColor: isDark ? "#3A1F1F" : "#FEF2F2",
     borderWidth: 1,
-    borderColor: "#FFC9C9",
+    borderColor: isDark ? "#5A2D2D" : "#FFC9C9",
   },
   netBalanceContent: {
     flexDirection: "row",
@@ -464,7 +470,7 @@ const styles = StyleSheet.create({
   },
   netBalanceLabel: {
     fontSize: 14,
-    color: "#6B7280",
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   netBalanceAmount: {
@@ -487,9 +493,9 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 16,
     padding: 16,
-    shadowColor: "#000",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: isDark ? 0.2 : 0.08,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -506,26 +512,26 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   iconCircleGreen: {
-    backgroundColor: "#D1FAE5",
+    backgroundColor: isDark ? "#1A3A2E" : "#D1FAE5",
   },
   iconCircleRed: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: isDark ? "#3A1F1F" : "#FEE2E2",
   },
   statCardText: {
     flex: 1,
   },
   owedCard: {
-    backgroundColor: "#F0FDF4",
+    backgroundColor: isDark ? "#1A3A2E" : "#F0FDF4",
     borderWidth: 1,
-    borderColor: "#B9F8CF",
+    borderColor: isDark ? "#2D5A47" : "#B9F8CF",
   },
   oweCard: {
-    backgroundColor: "#FEF2F2",
+    backgroundColor: isDark ? "#3A1F1F" : "#FEF2F2",
     borderWidth: 1,
-    borderColor: "#FFC9C9",
+    borderColor: isDark ? "#5A2D2D" : "#FFC9C9",
   },
   cardTitle: {
-    color: "#717182",
+    color: colors.textSecondary,
     fontSize: 13,
     marginBottom: 4,
     fontWeight: "500",
@@ -552,9 +558,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 12,
     borderRadius: 12,
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
   },
   quickActionIcon: {
     width: 40,
@@ -566,7 +572,7 @@ const styles = StyleSheet.create({
   },
   quickActionText: {
     fontSize: 12,
-    color: "#111827",
+    color: colors.text,
     fontWeight: "600",
     textAlign: "center",
   },
@@ -582,7 +588,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
   },
   seeAllText: {
     fontSize: 14,
@@ -590,12 +596,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   emptyState: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: colors.borderLight,
     borderRadius: 16,
     padding: 32,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
   },
   emptyStateIcon: {
     marginBottom: 16,
@@ -603,11 +609,11 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 8,
   },
   emptyStateText: {
-    color: "#6B7280",
+    color: colors.textSecondary,
     fontSize: 14,
     textAlign: "center",
     marginBottom: 16,
@@ -620,7 +626,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   emptyStateButtonText: {
-    color: "#fff",
+    color: colors.white,
     fontWeight: "600",
     fontSize: 14,
   },

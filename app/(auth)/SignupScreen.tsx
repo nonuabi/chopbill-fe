@@ -14,8 +14,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { colors } from "../styles/colors";
-import { common } from "../styles/common";
+import { useTheme } from "../contexts/ThemeContext";
+import { getColors } from "../styles/colors";
+import { getCommonStyles } from "../styles/common";
 import { useToast } from "../contexts/ToastContext";
 import { extractErrorMessage } from "../utils/toast";
 import { API_BASE, TOKEN_KEY } from "../utils/auth";
@@ -31,6 +32,10 @@ const isPhoneNumber = (v: string) => {
 export default function SignupScreen() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const common = getCommonStyles(isDark);
+  const styles = getStyles(colors, isDark);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -164,7 +169,7 @@ export default function SignupScreen() {
                 <Ionicons 
                   name="person-outline" 
                   size={20} 
-                  color="#9CA3AF" 
+                  color={colors.textTertiary} 
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -182,7 +187,7 @@ export default function SignupScreen() {
                     shouldShowError("name") && styles.inputError
                   ]}
                   textContentType="name"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textTertiary}
                 />
               </View>
               {shouldShowError("name") && (
@@ -201,7 +206,7 @@ export default function SignupScreen() {
                 <Ionicons 
                   name="mail-outline" 
                   size={20} 
-                  color="#9CA3AF" 
+                  color={colors.textTertiary} 
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -220,7 +225,7 @@ export default function SignupScreen() {
                     shouldShowError("email") && styles.inputError
                   ]}
                   textContentType="emailAddress"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textTertiary}
                 />
               </View>
               {shouldShowError("email") && (
@@ -239,7 +244,7 @@ export default function SignupScreen() {
                 <Ionicons 
                   name="call-outline" 
                   size={20} 
-                  color="#9CA3AF" 
+                  color={colors.textTertiary} 
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -258,7 +263,7 @@ export default function SignupScreen() {
                     shouldShowError("phoneNumber") && styles.inputError
                   ]}
                   textContentType="telephoneNumber"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textTertiary}
                 />
               </View>
               {shouldShowError("phoneNumber") && (
@@ -275,7 +280,7 @@ export default function SignupScreen() {
               )}
               {(!email.trim() && !phoneNumber.trim()) && !shouldShowError("contact") && (
                 <View style={styles.hintContainer}>
-                  <Ionicons name="information-circle" size={14} color="#6B7280" />
+                  <Ionicons name="information-circle" size={14} color={colors.textSecondary} />
                   <Text style={styles.hint}>
                     Please provide either email or phone number
                   </Text>
@@ -291,7 +296,7 @@ export default function SignupScreen() {
                 <Ionicons 
                   name="lock-closed-outline" 
                   size={20} 
-                  color="#9CA3AF" 
+                  color={colors.textTertiary} 
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -309,7 +314,7 @@ export default function SignupScreen() {
                     shouldShowError("password") && styles.inputError,
                   ]}
                   textContentType="newPassword"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textTertiary}
                 />
                 <Pressable
                   style={styles.eyeBtn}
@@ -318,7 +323,7 @@ export default function SignupScreen() {
                   <Ionicons 
                     name={showPassword ? "eye-off-outline" : "eye-outline"} 
                     size={20} 
-                    color="#6B7280" 
+                    color={colors.textSecondary} 
                   />
                 </Pressable>
               </View>
@@ -338,7 +343,7 @@ export default function SignupScreen() {
                 <Ionicons 
                   name="lock-closed-outline" 
                   size={20} 
-                  color="#9CA3AF" 
+                  color={colors.textTertiary} 
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -355,7 +360,7 @@ export default function SignupScreen() {
                     shouldShowError("confirm") && styles.inputError
                   ]}
                   textContentType="newPassword"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textTertiary}
                 />
               </View>
               {shouldShowError("confirm") && (
@@ -382,11 +387,11 @@ export default function SignupScreen() {
               ]}
             >
               {loading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.white} />
               ) : (
                 <>
                   <Text style={styles.ctaText}>Create account</Text>
-                  <Ionicons name="arrow-forward" size={20} color="#fff" style={styles.ctaIcon} />
+                  <Ionicons name="arrow-forward" size={20} color={colors.white} style={styles.ctaIcon} />
                 </>
               )}
             </Pressable>
@@ -406,7 +411,7 @@ export default function SignupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => StyleSheet.create({
   scrollContent: {
     paddingTop: 40,
     paddingBottom: 100,
@@ -422,35 +427,35 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.borderLight,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
   },
   title: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 8,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: "#6B7280",
+    color: colors.textSecondary,
     textAlign: "center",
     lineHeight: 22,
   },
   formCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    shadowColor: "#000",
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.2 : 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -460,7 +465,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 8,
   },
   required: {
@@ -470,16 +475,16 @@ const styles = StyleSheet.create({
   },
   optional: {
     fontSize: 13,
-    color: "#6B7280",
+    color: colors.textSecondary,
     fontWeight: "400",
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.border,
     borderRadius: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.background,
     paddingHorizontal: 12,
   },
   inputIcon: {
@@ -488,7 +493,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: "#111827",
+    color: colors.text,
     paddingVertical: 14,
   },
   flex: {
@@ -518,7 +523,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   hint: {
-    color: "#6B7280",
+    color: colors.textSecondary,
     fontSize: 13,
     marginLeft: 4,
     fontWeight: "400",
@@ -545,7 +550,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   ctaText: {
-    color: "#fff",
+    color: colors.white,
     fontWeight: "600",
     fontSize: 16,
   },
@@ -559,7 +564,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: "#6B7280",
+    color: colors.textSecondary,
   },
   footerLink: {
     fontSize: 14,

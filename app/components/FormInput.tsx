@@ -1,4 +1,6 @@
 import { StyleSheet, Text, TextInput, View } from "react-native";
+import { useTheme } from "../contexts/ThemeContext";
+import { getColors } from "../styles/colors";
 
 interface FormInputProps {
   lable: string;
@@ -21,36 +23,42 @@ const FormInput = ({
   keyboardType,
   secureTextEntry,
 }: FormInputProps) => {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const styles = getStyles(colors);
+
   return (
     <View style={{ width: "100%", marginBottom: 16 }}>
-      <Text style={form.lable}>{lable}</Text>
+      <Text style={styles.lable}>{lable}</Text>
       <TextInput
         placeholder={placeholder}
         value={value}
         onChangeText={onChangeText}
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
-        style={form.input}
-        placeholderTextColor="#9CA3AF"
+        style={styles.input}
+        placeholderTextColor={colors.textTertiary}
       />
     </View>
   );
 };
 
-const form = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof getColors>) => StyleSheet.create({
   lable: {
     fontSize: 14,
     fontWeight: "500",
     marginBottom: 6,
-    color: "#111827",
+    color: colors.text,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
+    color: colors.text,
   },
 });
+
 export default FormInput;

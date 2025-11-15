@@ -1,10 +1,13 @@
 import { Slot } from 'expo-router';
 import { ToastProvider } from './contexts/ToastContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 export default function RootLayout() {
   return (
-    <ToastProvider>
-      <Slot />
-    </ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        <Slot />
+      </ToastProvider>
+    </ThemeProvider>
   );
 }
