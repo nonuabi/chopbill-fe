@@ -3,6 +3,8 @@ import * as SecureStore from "expo-secure-store";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,9 +18,7 @@ import { colors } from "../styles/colors";
 import { common } from "../styles/common";
 import { useToast } from "../contexts/ToastContext";
 import { extractErrorMessage } from "../utils/toast";
-
-const API_BASE = "http://10.0.2.2:3000";
-const TOKEN_KEY = "sf_token";
+import { API_BASE, TOKEN_KEY } from "../utils/auth";
 
 const isEmail = (v: string) =>
   /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v?.trim());
@@ -128,10 +128,16 @@ export default function LoginScreen() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={[common.safeViewContainer]}>
-        <ScrollView 
-          contentContainerStyle={[common.container, styles.scrollContent]}
-          showsVerticalScrollIndicator={false}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
         >
+          <ScrollView 
+            contentContainerStyle={[common.container, styles.scrollContent]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
           {/* Header Section */}
           <View style={styles.headerSection}>
             <View style={styles.logoContainer}>
@@ -263,7 +269,8 @@ export default function LoginScreen() {
               <Text style={styles.footerLink}>Sign up</Text>
             </Pressable>
           </View>
-        </ScrollView>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -272,7 +279,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: 40,
-    paddingBottom: 32,
+    paddingBottom: 100,
   },
   headerSection: {
     alignItems: "center",

@@ -2,10 +2,11 @@ import Feather from "@expo/vector-icons/Feather";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useFocusEffect, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -50,6 +51,7 @@ export default function ProfileScreen() {
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [personalInviteUrl, setPersonalInviteUrl] = useState<string>("");
   const [sharingInvite, setSharingInvite] = useState(false);
@@ -107,6 +109,9 @@ export default function ProfileScreen() {
 
   const fetchUser = useCallback(async () => {
     try {
+      if (!refreshing) {
+        setLoading(true);
+      }
       const res = await authenticatedFetch(`${API_BASE}/api/me`, {
         method: "GET",
       });
@@ -128,6 +133,7 @@ export default function ProfileScreen() {
         showToast(e?.message || "Could not load profile data. Pull down to refresh.", "error");
       }
     } finally {
+      setLoading(false);
       setRefreshing(false);
     }
   }, [refreshing]);
@@ -225,6 +231,112 @@ export default function ProfileScreen() {
   const formatCurrency = (amount: number) => {
     return `₹${amount.toFixed(2)}`;
   };
+
+  // Loading skeleton component with shimmer effect
+  const SkeletonBox = ({ width, height, style }: { width?: number | string; height: number; style?: any }) => {
+    const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(shimmerAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shimmerAnim, {
+            toValue: 0,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }, []);
+
+    const opacity = shimmerAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.5, 0.8],
+    });
+
+    return (
+      <Animated.View style={[styles.skeletonBox, { width: width || "100%", height, opacity }, style]} />
+    );
+  };
+
+  if (loading && !user) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={[common.safeViewContainer]}>
+          <ScrollView 
+            contentContainerStyle={[common.container]}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Profile Header Skeleton */}
+            <View style={styles.profileCard}>
+              <View style={styles.profileHeader}>
+                <View style={[styles.skeletonCircle, { width: 100, height: 100, borderRadius: 50 }]} />
+                <View style={[styles.profileInfo, { flex: 1 }]}>
+                  <SkeletonBox width="70%" height={28} style={{ marginBottom: 8 }} />
+                  <SkeletonBox width="60%" height={18} style={{ marginBottom: 4 }} />
+                  <SkeletonBox width="50%" height={14} />
+                </View>
+                <View style={[styles.skeletonBox, { width: 36, height: 36, borderRadius: 8 }]} />
+              </View>
+            </View>
+
+            {/* Stats Section Skeleton */}
+            <View style={styles.statsSection}>
+              <SkeletonBox width="40%" height={22} style={{ marginBottom: 12 }} />
+              <View style={styles.statsGrid}>
+                {[1, 2, 3, 4].map((i) => (
+                  <View key={i} style={styles.statCard}>
+                    <View style={[styles.skeletonCircle, { width: 48, height: 48, borderRadius: 24, marginBottom: 8 }]} />
+                    <SkeletonBox width="60%" height={20} style={{ marginBottom: 4 }} />
+                    <SkeletonBox width="40%" height={16} />
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Account Info Skeleton */}
+            <View style={styles.section}>
+              <SkeletonBox width="45%" height={22} style={{ marginBottom: 12 }} />
+              <View style={styles.infoCard}>
+                {[1, 2, 3].map((i) => (
+                  <View key={i}>
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLeft}>
+                        <View style={[styles.skeletonBox, { width: 20, height: 20, borderRadius: 4 }]} />
+                        <SkeletonBox width={60} height={16} />
+                      </View>
+                      <SkeletonBox width="40%" height={16} />
+                    </View>
+                    {i < 3 && <View style={styles.infoDivider} />}
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Actions Skeleton */}
+            <View style={styles.section}>
+              {[1, 2].map((i) => (
+                <View key={i} style={[styles.actionCard, { marginBottom: 12 }]}>
+                  <View style={styles.actionLeft}>
+                    <View style={[styles.skeletonCircle, { width: 40, height: 40, borderRadius: 20 }]} />
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <SkeletonBox width="50%" height={18} style={{ marginBottom: 4 }} />
+                      <SkeletonBox width="70%" height={14} />
+                    </View>
+                  </View>
+                  <View style={[styles.skeletonBox, { width: 20, height: 20, borderRadius: 4 }]} />
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>
@@ -709,4 +821,11 @@ const styles = StyleSheet.create({
   btnTextPrimary: { color: "#fff", fontWeight: "600" },
   btnGhost: { backgroundColor: "#F3F4F6" },
   btnTextGhost: { color: "#111827", fontWeight: "600" },
+  skeletonBox: {
+    backgroundColor: "#E5E7EB",
+    borderRadius: 8,
+  },
+  skeletonCircle: {
+    backgroundColor: "#E5E7EB",
+  },
 });
