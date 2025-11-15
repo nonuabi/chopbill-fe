@@ -10,10 +10,10 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "../styles/colors";
 import { common } from "../styles/common";
-import { authStyles } from "./styles";
 import { useToast } from "../contexts/ToastContext";
 import { extractErrorMessage } from "../utils/toast";
 
@@ -133,160 +133,264 @@ export default function SignupScreen() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={[common.safeViewContainer]}>
-        <ScrollView contentContainerStyle={[common.container]}>
-          <View>
-            <Text style={authStyles.brand}>Create account</Text>
-
-            <Text style={styles.label}>
-              Full Name <Text style={styles.required}>*</Text>
-            </Text>
-            <TextInput
-              value={name}
-              onChangeText={(text) => {
-                setName(text);
-                setTouched((prev) => ({ ...prev, name: true }));
-              }}
-              onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
-              autoCapitalize="words"
-              autoCorrect={false}
-              placeholder="Your name"
-              style={[
-                authStyles.input,
-                shouldShowError("name") && styles.inputError
-              ]}
-              textContentType="name"
-              placeholderTextColor="#9CA3AF"
-            />
-            {shouldShowError("name") && <Text style={styles.error}>{errors.name}</Text>}
-
-            <Text style={styles.label}>
-              Email <Text style={styles.required}>*</Text>
-              <Text style={styles.optional}> (or phone)</Text>
-            </Text>
-            <TextInput
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                setTouched((prev) => ({ ...prev, email: true }));
-              }}
-              onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              placeholder="you@example.com"
-              style={[
-                authStyles.input,
-                shouldShowError("email") && styles.inputError
-              ]}
-              textContentType="emailAddress"
-              placeholderTextColor="#9CA3AF"
-            />
-            {shouldShowError("email") && <Text style={styles.error}>{errors.email}</Text>}
-
-            <Text style={[styles.label, { marginTop: 12 }]}>
-              Phone Number <Text style={styles.required}>*</Text>
-              <Text style={styles.optional}> (or email)</Text>
-            </Text>
-            <TextInput
-              value={phoneNumber}
-              onChangeText={(text) => {
-                setPhoneNumber(text);
-                setTouched((prev) => ({ ...prev, phoneNumber: true }));
-              }}
-              onBlur={() => setTouched((prev) => ({ ...prev, phoneNumber: true }))}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="phone-pad"
-              placeholder="+1234567890"
-              style={[
-                authStyles.input,
-                shouldShowError("phoneNumber") && styles.inputError
-              ]}
-              textContentType="telephoneNumber"
-              placeholderTextColor="#9CA3AF"
-            />
-            {shouldShowError("phoneNumber") && <Text style={styles.error}>{errors.phoneNumber}</Text>}
-            {shouldShowError("contact") && <Text style={styles.error}>{errors.contact}</Text>}
-            {(!email.trim() && !phoneNumber.trim()) && (
-              <Text style={styles.hint}>
-                * Please provide either email or phone number
-              </Text>
-            )}
-
-            <Text style={[styles.label, { marginTop: 12 }]}>
-              Password <Text style={styles.required}>*</Text>
-            </Text>
-            <View style={styles.row}>
-              <TextInput
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  setTouched((prev) => ({ ...prev, password: true }));
-                }}
-                onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
-                secureTextEntry={!showPassword}
-                placeholder="••••••••"
-                style={[
-                  authStyles.input,
-                  styles.flex,
-                  shouldShowError("password") && styles.inputError,
-                ]}
-                textContentType="newPassword"
-                placeholderTextColor="#9CA3AF"
-              />
-              <Pressable
-                style={styles.eyeBtn}
-                onPress={() => setShowPassword((s) => !s)}
-              >
-                <Text>{showPassword ? "Hide" : "Show"}</Text>
-              </Pressable>
+        <ScrollView 
+          contentContainerStyle={[common.container, styles.scrollContent]}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header Section */}
+          <View style={styles.headerSection}>
+            <View style={styles.logoContainer}>
+              <View style={styles.logoCircle}>
+                <Ionicons name="person-add" size={32} color={colors.primary} />
+              </View>
             </View>
-            {shouldShowError("password") && (
-              <Text style={styles.error}>{errors.password}</Text>
-            )}
+            <Text style={styles.title}>Create account</Text>
+            <Text style={styles.subtitle}>Join ChopBill to start splitting expenses</Text>
+          </View>
 
-            <Text style={[styles.label, { marginTop: 12 }]}>
-              Confirm password <Text style={styles.required}>*</Text>
-            </Text>
-            <TextInput
-              value={confirm}
-              onChangeText={(text) => {
-                setConfirm(text);
-                setTouched((prev) => ({ ...prev, confirm: true }));
-              }}
-              onBlur={() => setTouched((prev) => ({ ...prev, confirm: true }))}
-              secureTextEntry={!showPassword}
-              placeholder="••••••••"
-              style={[
-                authStyles.input,
-                shouldShowError("confirm") && styles.inputError
-              ]}
-              textContentType="newPassword"
-              placeholderTextColor="#9CA3AF"
-            />
-            {shouldShowError("confirm") && (
-              <Text style={styles.error}>{errors.confirm}</Text>
-            )}
+          {/* Form Card */}
+          <View style={styles.formCard}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Full Name <Text style={styles.required}>*</Text>
+              </Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons 
+                  name="person-outline" 
+                  size={20} 
+                  color="#9CA3AF" 
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  value={name}
+                  onChangeText={(text) => {
+                    setName(text);
+                    setTouched((prev) => ({ ...prev, name: true }));
+                  }}
+                  onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  placeholder="Your full name"
+                  style={[
+                    styles.input,
+                    shouldShowError("name") && styles.inputError
+                  ]}
+                  textContentType="name"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+              {shouldShowError("name") && (
+                <View style={styles.errorContainer}>
+                  <Ionicons name="alert-circle" size={14} color={colors.danger} />
+                  <Text style={styles.error}>{errors.name}</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Email <Text style={styles.optional}> (or phone)</Text>
+              </Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons 
+                  name="mail-outline" 
+                  size={20} 
+                  color="#9CA3AF" 
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  value={email}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    setTouched((prev) => ({ ...prev, email: true }));
+                  }}
+                  onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  placeholder="you@example.com"
+                  style={[
+                    styles.input,
+                    shouldShowError("email") && styles.inputError
+                  ]}
+                  textContentType="emailAddress"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+              {shouldShowError("email") && (
+                <View style={styles.errorContainer}>
+                  <Ionicons name="alert-circle" size={14} color={colors.danger} />
+                  <Text style={styles.error}>{errors.email}</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Phone Number <Text style={styles.optional}> (or email)</Text>
+              </Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons 
+                  name="call-outline" 
+                  size={20} 
+                  color="#9CA3AF" 
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  value={phoneNumber}
+                  onChangeText={(text) => {
+                    setPhoneNumber(text);
+                    setTouched((prev) => ({ ...prev, phoneNumber: true }));
+                  }}
+                  onBlur={() => setTouched((prev) => ({ ...prev, phoneNumber: true }))}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="phone-pad"
+                  placeholder="+1234567890"
+                  style={[
+                    styles.input,
+                    shouldShowError("phoneNumber") && styles.inputError
+                  ]}
+                  textContentType="telephoneNumber"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+              {shouldShowError("phoneNumber") && (
+                <View style={styles.errorContainer}>
+                  <Ionicons name="alert-circle" size={14} color={colors.danger} />
+                  <Text style={styles.error}>{errors.phoneNumber}</Text>
+                </View>
+              )}
+              {shouldShowError("contact") && (
+                <View style={styles.errorContainer}>
+                  <Ionicons name="alert-circle" size={14} color={colors.danger} />
+                  <Text style={styles.error}>{errors.contact}</Text>
+                </View>
+              )}
+              {(!email.trim() && !phoneNumber.trim()) && !shouldShowError("contact") && (
+                <View style={styles.hintContainer}>
+                  <Ionicons name="information-circle" size={14} color="#6B7280" />
+                  <Text style={styles.hint}>
+                    Please provide either email or phone number
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Password <Text style={styles.required}>*</Text>
+              </Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons 
+                  name="lock-closed-outline" 
+                  size={20} 
+                  color="#9CA3AF" 
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    setTouched((prev) => ({ ...prev, password: true }));
+                  }}
+                  onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
+                  secureTextEntry={!showPassword}
+                  placeholder="Create a password"
+                  style={[
+                    styles.input,
+                    styles.flex,
+                    shouldShowError("password") && styles.inputError,
+                  ]}
+                  textContentType="newPassword"
+                  placeholderTextColor="#9CA3AF"
+                />
+                <Pressable
+                  style={styles.eyeBtn}
+                  onPress={() => setShowPassword((s) => !s)}
+                >
+                  <Ionicons 
+                    name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                    size={20} 
+                    color="#6B7280" 
+                  />
+                </Pressable>
+              </View>
+              {shouldShowError("password") && (
+                <View style={styles.errorContainer}>
+                  <Ionicons name="alert-circle" size={14} color={colors.danger} />
+                  <Text style={styles.error}>{errors.password}</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Confirm Password <Text style={styles.required}>*</Text>
+              </Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons 
+                  name="lock-closed-outline" 
+                  size={20} 
+                  color="#9CA3AF" 
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  value={confirm}
+                  onChangeText={(text) => {
+                    setConfirm(text);
+                    setTouched((prev) => ({ ...prev, confirm: true }));
+                  }}
+                  onBlur={() => setTouched((prev) => ({ ...prev, confirm: true }))}
+                  secureTextEntry={!showPassword}
+                  placeholder="Confirm your password"
+                  style={[
+                    styles.input,
+                    shouldShowError("confirm") && styles.inputError
+                  ]}
+                  textContentType="newPassword"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+              {shouldShowError("confirm") && (
+                <View style={styles.errorContainer}>
+                  <Ionicons name="alert-circle" size={14} color={colors.danger} />
+                  <Text style={styles.error}>{errors.confirm}</Text>
+                </View>
+              )}
+              {!shouldShowError("confirm") && password && confirm && password === confirm && (
+                <View style={styles.hintContainer}>
+                  <Ionicons name="checkmark-circle" size={14} color={colors.green} />
+                  <Text style={styles.hint}>Passwords match</Text>
+                </View>
+              )}
+            </View>
 
             <Pressable
               onPress={onSubmit}
               disabled={!canSubmit}
-              style={[styles.cta, !canSubmit && styles.ctaDisabled]}
+              style={({ pressed }) => [
+                styles.cta, 
+                !canSubmit && styles.ctaDisabled,
+                pressed && styles.ctaPressed
+              ]}
             >
               {loading ? (
-                <ActivityIndicator />
+                <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.ctaText}>Create account</Text>
+                <>
+                  <Text style={styles.ctaText}>Create account</Text>
+                  <Ionicons name="arrow-forward" size={20} color="#fff" style={styles.ctaIcon} />
+                </>
               )}
             </Pressable>
+          </View>
 
-            <Pressable
-              onPress={() => router.push("/(auth)/LoginScreen")}
-              style={styles.secondary}
-            >
-              <Text style={styles.secondaryText}>
-                Already have an account? Log in
-              </Text>
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Already have an account? </Text>
+            <Pressable onPress={() => router.push("/(auth)/LoginScreen")}>
+              <Text style={styles.footerLink}>Log in</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -296,33 +400,163 @@ export default function SignupScreen() {
 }
 
 const styles = StyleSheet.create({
-  label: { fontSize: 14, marginBottom: 6, opacity: 0.8 },
-  optional: { fontSize: 12, opacity: 0.6, fontWeight: "normal" },
-  required: { fontSize: 14, color: colors.danger, fontWeight: "700" },
-  row: { flexDirection: "row", alignItems: "center" },
-  flex: { flex: 1 },
-  eyeBtn: {
-    marginLeft: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    backgroundColor: "#fff",
+  scrollContent: {
+    paddingTop: 40,
+    paddingBottom: 32,
   },
-  inputError: { borderColor: colors.danger, borderWidth: 1, borderRadius: 10 },
-  cta: {
-    marginTop: 20,
+  headerSection: {
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  logoContainer: {
+    marginBottom: 24,
+  },
+  logoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#E5E7EB",
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#6B7280",
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  formCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  required: {
+    fontSize: 14,
+    color: colors.danger,
+    fontWeight: "700",
+  },
+  optional: {
+    fontSize: 13,
+    color: "#6B7280",
+    fontWeight: "400",
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+  },
+  inputIcon: {
+    marginRight: 8,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: "#111827",
     paddingVertical: 14,
-    borderRadius: 10,
+  },
+  flex: {
+    flex: 1,
+  },
+  eyeBtn: {
+    padding: 4,
+    marginLeft: 4,
+  },
+  inputError: {
+    borderColor: colors.danger,
+    borderWidth: 2,
+  },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+  },
+  error: {
+    color: colors.danger,
+    fontSize: 13,
+    marginLeft: 4,
+  },
+  hintContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+  },
+  hint: {
+    color: "#6B7280",
+    fontSize: 13,
+    marginLeft: 4,
+    fontWeight: "400",
+  },
+  cta: {
+    marginTop: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.primary,
+    flexDirection: "row",
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  ctaDisabled: { opacity: 0.5 },
-  ctaText: { color: "#fff", fontWeight: "600", fontSize: 16 },
-  secondary: { marginTop: 12, alignItems: "center" },
-  secondaryText: { textDecorationLine: "underline", opacity: 0.8 },
-  error: { color: colors.danger, marginTop: 4, fontSize: 13, marginBottom: 2 },
-  hint: { color: "#6B7280", marginTop: 4, fontSize: 12, fontStyle: "italic" },
+  ctaPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
+  },
+  ctaDisabled: {
+    opacity: 0.5,
+  },
+  ctaText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  ctaIcon: {
+    marginLeft: 8,
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  footerText: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  footerLink: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: "600",
+  },
 });
