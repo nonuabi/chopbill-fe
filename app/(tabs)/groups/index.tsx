@@ -90,7 +90,7 @@ export default function GroupsScreen() {
   const [groupdesciption, setGroupDiscription] = useState("");
   const [memberQuery, setMemberQuery] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<
-    { id?: string; email?: string; phone_number?: string; name?: string; newUser?: boolean }[]
+    { id?: string; email?: string; phone_number?: string; name?: string }[]
   >([]);
   const [isSaving, setIsSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -189,15 +189,14 @@ export default function GroupsScreen() {
     email?: string,
     name?: string,
     id?: string,
-    phone_number?: string,
-    newUser = false
+    phone_number?: string
   ) => {
     const identifier = email || phone_number || "";
     const exists = selectedMembers.some(
       (m) => normalized(m.email || m.phone_number) === normalized(identifier)
     );
     if (exists) return;
-    setSelectedMembers((prev) => [...prev, { email, phone_number, name, id, newUser }]);
+    setSelectedMembers((prev) => [...prev, { email, phone_number, name, id }]);
     setMemberQuery("");
   };
 
@@ -360,13 +359,15 @@ export default function GroupsScreen() {
               renderItem={({ item }) => {
                 const total = item.totalAmount ?? 0;
                 const bal = item.balanceForMe ?? 0;
+                const expenseCount = item.expense_count || 0;
+                const hasExpenses = expenseCount > 0;
+                // A group is only "settled" if it has expenses AND balance is 0
+                // New groups with no expenses should not show as settled
+                const isSettled = hasExpenses && bal === 0;
                 const isPositive = bal > 0;
                 const isNegative = bal < 0;
-                const isSettled = bal === 0;
-                const expenseCount = item.expense_count || 0;
                 const memberAvatars = item.member_avatars || [];
                 const recentExpenses = item.recent_expenses_summary || [];
-                const hasExpenses = expenseCount > 0;
 
                 return (
                   <Pressable
@@ -415,7 +416,7 @@ export default function GroupsScreen() {
                                 <Text style={styles.settledText}>Settled</Text>
                               </View>
                             </>
-                          ) : (
+                          ) : hasExpenses ? (
                             <>
                               <Text
                                 style={[
@@ -427,6 +428,12 @@ export default function GroupsScreen() {
                               </Text>
                               <Text style={styles.balanceLabel}>
                                 {isPositive ? "owed to you" : "you owe"}
+                              </Text>
+                            </>
+                          ) : (
+                            <>
+                              <Text style={styles.balanceLabel}>
+                                No expenses yet
                               </Text>
                             </>
                           )}
@@ -586,7 +593,6 @@ export default function GroupsScreen() {
                           <View key={identifier} style={styles.chip}>
                             <Text style={styles.chipText}>
                               {m.name ? `${m.name} · ${displayText}` : displayText}
-                              {m.newUser ? " (newUser)" : ""}
                             </Text>
                             <Pressable
                               onPress={() => removeMember(identifier)}
@@ -630,26 +636,11 @@ export default function GroupsScreen() {
                       ) : (
                         <View style={styles.resultEmpty}>
                           <Text style={styles.resultEmptyText}>
-                            No users found.
+                            No users found. Only existing ShareFare users can be added to groups.
                           </Text>
-                          {/* Invite CTA if looks like an email or phone */}
-                          {(memberQuery.includes("@") || /^\+?[1-9]\d{1,14}$/.test(memberQuery.trim())) && (
-                            <Pressable
-                              onPress={() => {
-                                const trimmed = memberQuery.trim();
-                                if (trimmed.includes("@")) {
-                                  addMemberByEmail(trimmed, undefined, undefined, undefined, true);
-                                } else {
-                                  addMemberByEmail(undefined, undefined, undefined, trimmed, true);
-                                }
-                              }}
-                              style={[styles.inviteBtn, styles.btnPrimary]}
-                            >
-                              <Text style={styles.btnTextPrimary}>
-                                Invite {memberQuery.trim()}
-                              </Text>
-                            </Pressable>
-                          )}
+                          <Text style={styles.hintText}>
+                            Share the app with your friends so they can join your groups!
+                          </Text>
                         </View>
                       )}
                     </View>
@@ -1113,7 +1104,13 @@ const styles = StyleSheet.create({
   resultName: { fontWeight: "600", color: "#111827" },
   resultEmail: { color: "#6B7280" },
   resultEmpty: { padding: 12, gap: 10 },
-  resultEmptyText: { color: "#6B7280" },
+  resultEmptyText: { color: "#6B7280", marginBottom: 8 },
+  hintText: { 
+    color: "#9CA3AF", 
+    fontSize: 12, 
+    fontStyle: "italic",
+    textAlign: "center"
+  },
   inviteBtn: {
     alignSelf: "flex-start",
     paddingVertical: 10,

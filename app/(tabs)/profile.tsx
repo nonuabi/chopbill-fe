@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Keyboard,
   KeyboardAvoidingView,
@@ -12,6 +13,7 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -46,6 +48,8 @@ export default function ProfileScreen() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [personalInviteUrl, setPersonalInviteUrl] = useState<string>("");
+  const [sharingInvite, setSharingInvite] = useState(false);
   const openEdit = () => {
     setName(user?.name || "");
     setEmail(user?.email || "");
@@ -128,12 +132,77 @@ export default function ProfileScreen() {
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchUser();
+    fetchPersonalInvite();
   }, [fetchUser]);
+
+  const fetchPersonalInvite = useCallback(async () => {
+    try {
+      const res = await authenticatedFetch(`${API_BASE}/api/invites/personal`, {
+        method: "GET",
+      });
+
+      if (!res) {
+        return;
+      }
+
+      if (!res.ok) {
+        console.error("Failed to fetch personal invite");
+        return;
+      }
+
+      const data = await res.json();
+      setPersonalInviteUrl(data?.invite_url || "");
+    } catch (e: any) {
+      console.log("Error fetching personal invite:", e);
+    }
+  }, []);
+
+  const sharePersonalInvite = async () => {
+    try {
+      if (!personalInviteUrl) {
+        await fetchPersonalInvite();
+        // Wait a bit for state to update
+        setTimeout(() => sharePersonalInvite(), 100);
+        return;
+      }
+
+      setSharingInvite(true);
+      const message = `Join me on ShareFare! Split expenses with friends easily. Sign up here: ${personalInviteUrl}`;
+      
+      try {
+        const result = await Share.share({
+          message: message,
+          title: "Invite friends to ShareFare",
+        });
+
+        if (result.action === Share.sharedAction) {
+          if (result.activityType) {
+            // Shared with activity type of result.activityType
+            console.log("Shared with activity type:", result.activityType);
+          } else {
+            // Shared
+            console.log("Shared successfully");
+          }
+        } else if (result.action === Share.dismissedAction) {
+          // Dismissed
+          console.log("Share dismissed");
+        }
+      } catch (error: any) {
+        Alert.alert("Error", error.message || "Could not share invite. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error sharing invite:", error);
+      Alert.alert("Error", "Could not share invite. Please try again.");
+    } finally {
+      setSharingInvite(false);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
       fetchUser();
-    }, [fetchUser])
+      fetchPersonalInvite();
+    }, [fetchUser, fetchPersonalInvite])
   );
 
   const formatDate = (dateString?: string) => {
@@ -290,6 +359,28 @@ export default function ProfileScreen() {
                 </View>
               </View>
               <Feather name="chevron-right" size={20} color="#9CA3AF" />
+            </Pressable>
+
+            {/* Invite Friends */}
+            <Pressable 
+              style={styles.actionCard}
+              onPress={sharePersonalInvite}
+              disabled={sharingInvite}
+            >
+              <View style={styles.actionLeft}>
+                <View style={[styles.actionIcon, { backgroundColor: "#EEF2FF" }]}>
+                  <Feather name="share-2" size={20} color={colors.primary} />
+                </View>
+                <View>
+                  <Text style={styles.actionTitle}>Invite Friends</Text>
+                  <Text style={styles.actionSubtitle}>Share ShareFare with your contacts</Text>
+                </View>
+              </View>
+              {sharingInvite ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Feather name="chevron-right" size={20} color="#9CA3AF" />
+              )}
             </Pressable>
           </View>
 

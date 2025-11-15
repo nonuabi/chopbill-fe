@@ -1,4 +1,5 @@
 import AntDesign from "@expo/vector-icons/AntDesign";
+import Feather from "@expo/vector-icons/Feather";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useState } from "react";
@@ -10,6 +11,7 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -74,6 +76,8 @@ export default function GroupDetailsScreen() {
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [groupInviteUrl, setGroupInviteUrl] = useState<string>("");
+  const [sharingInvite, setSharingInvite] = useState(false);
 
   const fetchGroupDetails = async () => {
     try {
@@ -104,11 +108,95 @@ export default function GroupDetailsScreen() {
 
   useEffect(() => {
     fetchGroupDetails();
+    // Only fetch invite when group is loaded (lazy load)
+    // Don't block group details view if invite fetch fails
   }, [id]);
 
   const onRefresh = () => {
     setRefreshing(true);
     fetchGroupDetails();
+    // Don't fetch invite on refresh - only when user wants to share
+  };
+
+  const fetchGroupInvite = async (): Promise<string | null> => {
+    try {
+      const res = await authenticatedFetch(`${API_BASE}/api/groups/${id}/invites`, {
+        method: "POST",
+      });
+
+      if (!res) {
+        // Auth error already handled, but don't block the UI
+        return null;
+      }
+
+      // Handle non-auth errors gracefully (403, 404, etc.)
+      if (!res.ok) {
+        const status = res.status;
+        // 403 = forbidden (not a member), 404 = not found - these are OK, just don't show share
+        if (status === 403 || status === 404) {
+          console.log("Cannot create invite: user may not be a member or group not found");
+          return null;
+        }
+        // Other errors - log but don't block
+        console.error("Failed to fetch/create group invite:", status);
+        return null;
+      }
+
+      const data = await res.json();
+      const inviteUrl = data?.invite?.invite_url || "";
+      setGroupInviteUrl(inviteUrl);
+      return inviteUrl;
+    } catch (e: any) {
+      // Network errors shouldn't block the UI
+      console.log("Error fetching group invite:", e);
+      return null;
+    }
+  };
+
+  const shareGroupInvite = async () => {
+    try {
+      setSharingInvite(true);
+      
+      // Fetch invite if not already fetched
+      let inviteUrl = groupInviteUrl;
+      if (!inviteUrl) {
+        inviteUrl = await fetchGroupInvite();
+        if (!inviteUrl) {
+          setSharingInvite(false);
+          Alert.alert(
+            "Unable to Share",
+            "Could not generate invite link. You may need to be a member of this group to share invites."
+          );
+          return;
+        }
+      }
+
+      const message = `Join "${group?.name}" group on ShareFare! Click here to join: ${inviteUrl}`;
+      
+      try {
+        const result = await Share.share({
+          message: message,
+          title: `Invite friends to ${group?.name}`,
+        });
+
+        if (result.action === Share.sharedAction) {
+          if (result.activityType) {
+            console.log("Shared with activity type:", result.activityType);
+          } else {
+            console.log("Shared successfully");
+          }
+        } else if (result.action === Share.dismissedAction) {
+          console.log("Share dismissed");
+        }
+      } catch (error: any) {
+        Alert.alert("Error", error.message || "Could not share invite. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error sharing invite:", error);
+      Alert.alert("Error", "Could not share invite. Please try again.");
+    } finally {
+      setSharingInvite(false);
+    }
   };
 
   const formatDate = (dateString?: string) => {
@@ -128,6 +216,7 @@ export default function GroupDetailsScreen() {
   const bal = group?.balance_for_me ?? 0;
   const memberBalances = group?.member_balances || [];
   const recentExpenses = group?.recent_expenses || [];
+  const hasExpenses = recentExpenses.length > 0 || total > 0;
 
   // Filter members who owe you or you owe
   const membersWhoOweYou = memberBalances.filter((mb) => mb.owes_you > 0);
@@ -141,13 +230,21 @@ export default function GroupDetailsScreen() {
   ]);
 
   // Show ALL members in "All Members" section, but mark which ones are settled
+  // A member is settled only if there are expenses AND their balance is 0
   const allMembers = (group?.members || []).map((member) => {
     const memberId = normalizeId(member.id) || member.email || member.phone_number || "";
     const hasBalance = membersWithBalances.has(memberId);
+    const memberBalance = memberBalances.find((mb) => 
+      normalizeId(mb.user.id) === memberId || 
+      mb.user.email === member.email || 
+      mb.user.phone_number === member.phone_number
+    );
+    // Settled = has expenses AND balance is 0 (not just no balance, which could mean no expenses)
+    const isSettled = hasExpenses && memberBalance && memberBalance.balance === 0;
     return {
       ...member,
       hasBalance,
-      isSettled: !hasBalance,
+      isSettled,
     };
   });
 
@@ -185,6 +282,20 @@ export default function GroupDetailsScreen() {
                   </Text>
                 ) : null}
               </View>
+              {group && (
+                <Pressable
+                  onPress={shareGroupInvite}
+                  disabled={sharingInvite}
+                  hitSlop={8}
+                  style={styles.shareBtn}
+                >
+                  {sharingInvite ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Feather name="share-2" size={20} color={colors.primary} />
+                  )}
+                </Pressable>
+              )}
             </View>
 
             {loading ? (
@@ -214,7 +325,9 @@ export default function GroupDetailsScreen() {
                       ? "You are owed"
                       : bal < 0
                         ? "You owe"
-                        : "All settled up"}
+                        : hasExpenses
+                          ? "All settled up"
+                          : "No expenses yet"}
                   </Text>
                 </View>
 
@@ -413,6 +526,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#F3F4F6",
+  },
+  shareBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F3F4F6",
+    marginLeft: 8,
   },
   headerTitle: {
     fontSize: 24,
