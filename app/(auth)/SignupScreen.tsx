@@ -21,12 +21,55 @@ import { useToast } from "../contexts/ToastContext";
 import { extractErrorMessage } from "../utils/toast";
 import { API_BASE, TOKEN_KEY } from "../utils/auth";
 
-const isEmail = (v: string) =>
-  /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v?.trim());
+// Enhanced email validation
+const isEmail = (v: string) => {
+  if (!v || !v.trim()) return false;
+  const trimmed = v.trim();
+  // More comprehensive email regex
+  const emailRegex = /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/;
+  // Check basic structure
+  if (!emailRegex.test(trimmed)) return false;
+  // Check for common invalid patterns
+  if (trimmed.includes("..")) return false;
+  if (trimmed.startsWith(".") || trimmed.startsWith("@")) return false;
+  if (trimmed.includes("@.") || trimmed.includes(".@")) return false;
+  // Check domain has at least one dot after @
+  const parts = trimmed.split("@");
+  if (parts.length !== 2) return false;
+  if (!parts[1].includes(".")) return false;
+  return true;
+};
 
+// Enhanced phone number validation (supports Indian and international formats)
 const isPhoneNumber = (v: string) => {
-  const cleaned = v.replace(/[\s\-\(\)]/g, "");
-  return /^\+?[1-9]\d{9,14}$/.test(cleaned);
+  if (!v || !v.trim()) return false;
+  // Remove all non-digit characters except +
+  const cleaned = v.replace(/[\s\-\(\)\.]/g, "");
+  
+  // Check if it starts with + (international format)
+  if (cleaned.startsWith("+")) {
+    // International: + followed by 10-15 digits
+    const digits = cleaned.substring(1);
+    if (!/^\d{10,15}$/.test(digits)) return false;
+    // Must start with a country code (1-9)
+    if (!/^[1-9]/.test(digits)) return false;
+    return true;
+  }
+  
+  // Indian format: 10 digits, optionally starting with 0
+  // Allow formats: 9876543210, 09876543210, +919876543210
+  if (/^0\d{10}$/.test(cleaned)) {
+    // Starts with 0 followed by 10 digits (11 total)
+    return true;
+  }
+  
+  // Standard 10-digit Indian number
+  if (/^\d{10}$/.test(cleaned)) {
+    // Must start with 6-9 (valid Indian mobile prefixes)
+    return /^[6-9]/.test(cleaned);
+  }
+  
+  return false;
 };
 
 export default function SignupScreen() {
@@ -59,10 +102,10 @@ export default function SignupScreen() {
       e.contact = "Email or phone number is required";
     } else {
       if (email.trim() && !isEmail(email)) {
-        e.email = "Enter a valid email";
+        e.email = "Please enter a valid email address (e.g., user@example.com)";
       }
       if (phoneNumber.trim() && !isPhoneNumber(phoneNumber)) {
-        e.phoneNumber = "Enter a valid phone number";
+        e.phoneNumber = "Please enter a valid 10-digit phone number (e.g., 9876543210)";
       }
     }
     
@@ -93,10 +136,18 @@ export default function SignupScreen() {
         name: name.trim()
       };
       
-      if (email.trim()) userData.email = email.trim();
+      if (email.trim()) {
+        userData.email = email.trim().toLowerCase();
+      }
       if (phoneNumber.trim()) {
-        // Clean phone number (remove spaces, dashes, etc.)
-        userData.phone_number = phoneNumber.replace(/[\s\-\(\)]/g, "");
+        // Clean phone number (remove spaces, dashes, parentheses, dots)
+        // Keep + for international numbers
+        let cleaned = phoneNumber.replace(/[\s\-\(\)\.]/g, "");
+        // If it's an Indian number starting with 0, remove the leading 0
+        if (cleaned.startsWith("0") && cleaned.length === 11) {
+          cleaned = cleaned.substring(1);
+        }
+        userData.phone_number = cleaned;
       }
 
       const res = await fetch(`${API_BASE}/signup`, {
@@ -234,6 +285,14 @@ export default function SignupScreen() {
                   <Text style={styles.error}>{errors.email}</Text>
                 </View>
               )}
+              {email.trim() && !shouldShowError("email") && isEmail(email) && (
+                <View style={styles.hintContainer}>
+                  <Ionicons name="checkmark-circle" size={14} color={colors.green} />
+                  <Text style={[styles.hint, { color: colors.green }]}>
+                    Valid email address
+                  </Text>
+                </View>
+              )}
             </View>
 
             <View style={styles.inputGroup}>
@@ -250,14 +309,17 @@ export default function SignupScreen() {
                 <TextInput
                   value={phoneNumber}
                   onChangeText={(text) => {
-                    setPhoneNumber(text);
+                    // Allow only digits, +, spaces, dashes, and parentheses
+                    const cleaned = text.replace(/[^\d\+\s\-\(\)]/g, "");
+                    setPhoneNumber(cleaned);
                     setTouched((prev) => ({ ...prev, phoneNumber: true }));
                   }}
                   onBlur={() => setTouched((prev) => ({ ...prev, phoneNumber: true }))}
                   autoCapitalize="none"
                   autoCorrect={false}
                   keyboardType="phone-pad"
-                  placeholder="+1234567890"
+                  placeholder="9876543210 or +919876543210"
+                  maxLength={15}
                   style={[
                     styles.input,
                     shouldShowError("phoneNumber") && styles.inputError
@@ -282,7 +344,15 @@ export default function SignupScreen() {
                 <View style={styles.hintContainer}>
                   <Ionicons name="information-circle" size={14} color={colors.textSecondary} />
                   <Text style={styles.hint}>
-                    Please provide either email or phone number
+                    Please provide either email or phone number (10-digit Indian number or international format)
+                  </Text>
+                </View>
+              )}
+              {phoneNumber.trim() && !shouldShowError("phoneNumber") && isPhoneNumber(phoneNumber) && (
+                <View style={styles.hintContainer}>
+                  <Ionicons name="checkmark-circle" size={14} color={colors.green} />
+                  <Text style={[styles.hint, { color: colors.green }]}>
+                    Valid phone number
                   </Text>
                 </View>
               )}
