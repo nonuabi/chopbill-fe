@@ -170,12 +170,12 @@ export default function ProfileScreen() {
       }
 
       setSharingInvite(true);
-      const message = `Join me on ShareFare! Split expenses with friends easily. Sign up here: ${personalInviteUrl}`;
+      const message = `Join me on ChopBill! Split expenses with friends easily. Sign up here: ${personalInviteUrl}`;
       
       try {
         const result = await Share.share({
           message: message,
-          title: "Invite friends to ShareFare",
+          title: "Invite friends to ChopBill",
         });
 
         if (result.action === Share.sharedAction) {
@@ -376,7 +376,7 @@ export default function ProfileScreen() {
                 </View>
                 <View>
                   <Text style={styles.actionTitle}>Invite Friends</Text>
-                  <Text style={styles.actionSubtitle}>Share ShareFare with your contacts</Text>
+                  <Text style={styles.actionSubtitle}>Share ChopBill with your contacts</Text>
                 </View>
               </View>
               {sharingInvite ? (

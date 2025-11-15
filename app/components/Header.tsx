@@ -2,7 +2,7 @@ import { Platform, StatusBar, StyleSheet, Text, View } from "react-native";
 export default function Header() {
   return (
     <View style={styles.header}>
-      <Text style={styles.headerTitle}>ShareFare</Text>
+      <Text style={styles.headerTitle}>ChopBill</Text>
     </View>
   );
 }

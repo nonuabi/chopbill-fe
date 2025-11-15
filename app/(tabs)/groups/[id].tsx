@@ -180,7 +180,7 @@ export default function GroupDetailsScreen() {
         }
       }
 
-      const message = `Join "${group?.name}" group on ShareFare! Click here to join: ${inviteUrl}`;
+      const message = `Join "${group?.name}" group on ChopBill! Click here to join: ${inviteUrl}`;
       
       try {
         const result = await Share.share({

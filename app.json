@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "sharefare-fe",
-    "slug": "sharefare-fe",
+    "name": "chopbill-fe",
+    "slug": "chopbill-fe",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/expo-new-icon.png",
-    "scheme": "sharefarefe",
+    "scheme": "chopbillfe",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -20,7 +20,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.dumbledore.sharefarefe"
+      "package": "com.dumbledore.chopbillfe"
     },
     "web": {
       "output": "static",

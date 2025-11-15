@@ -99,15 +99,30 @@ export default function SignupScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user: userData }),
       });
-      console.log("sign up api response: ", res);
       if (!res.ok) {
         const errorMsg = await extractErrorMessage(res);
         throw new Error(errorMsg || "Sign up failed. Please try again.");
       }
-      const data = await res.json().catch(() => ({}));
-      let token = data?.token;
-      await SecureStore.setItemAsync(TOKEN_KEY, token);
-      router.replace("/home");
+      const data = await res.json().catch((err) => {
+        throw new Error("Failed to parse server response. Please try again.");
+      });
+      const token = data?.token;
+      if (!token) {
+        throw new Error("Missing token in response. Please try again.");
+      }
+      // Ensure token is a string
+      const tokenString = String(token).trim();
+      if (!tokenString) {
+        throw new Error("Invalid token format. Please try again.");
+      }
+      await SecureStore.setItemAsync(TOKEN_KEY, tokenString);
+      // Verify token was stored correctly
+      const storedToken = await SecureStore.getItemAsync(TOKEN_KEY);
+      if (storedToken !== tokenString) {
+        throw new Error("Failed to store authentication token. Please try again.");
+      }
+      showToast("Account created successfully! 🎉", "success", 2000);
+      setTimeout(() => router.replace("/(tabs)/home"), 500);
     } catch (e: any) {
       showToast(e?.message || "Sign up failed. Please check your information and try again.", "error", 4000);
     } finally {

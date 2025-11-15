@@ -73,8 +73,6 @@ export default function LoginScreen() {
     }
 
     setLoading(true);
-    console.log("login api request: ", login, password);
-    console.log("API_BASE: ", API_BASE);
     try {
       // Send as 'login' field - backend will handle both email and phone
       const res = await fetch(`${API_BASE}/login`, {
@@ -87,20 +85,29 @@ export default function LoginScreen() {
           } 
         }),
       });
-      console.log("login api response status: ", res.status);
-      console.log("login api response: ", res);
       if (!res.ok) {
         const errorMsg = await extractErrorMessage(res);
         throw new Error(errorMsg || `Login failed (${res.status})`);
       }
       const data = await res.json();
       const token = data?.token;
-      if (!token) throw new Error("Missing token in response");
-      await SecureStore.setItemAsync(TOKEN_KEY, token);
+      if (!token) {
+        throw new Error("Missing token in response");
+      }
+      // Ensure token is a string and trim it
+      const tokenString = String(token).trim();
+      if (!tokenString) {
+        throw new Error("Invalid token format. Please try again.");
+      }
+      await SecureStore.setItemAsync(TOKEN_KEY, tokenString);
+      // Verify token was stored correctly
+      const storedToken = await SecureStore.getItemAsync(TOKEN_KEY);
+      if (storedToken !== tokenString) {
+        throw new Error("Failed to store authentication token. Please try again.");
+      }
       showToast("Welcome back! 🎉", "success", 2000);
-      setTimeout(() => router.replace("/home"), 500);
+      setTimeout(() => router.replace("/(tabs)/home"), 500);
     } catch (e: any) {
-      console.error("Login error: ", e);
       showToast(e?.message || "Login failed. Please check your credentials and try again.", "error", 4000);
     } finally {
       setLoading(false);

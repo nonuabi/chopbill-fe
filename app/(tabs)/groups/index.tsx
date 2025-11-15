@@ -662,7 +662,7 @@ export default function GroupsScreen() {
                       ) : (
                         <View style={styles.resultEmpty}>
                           <Text style={styles.resultEmptyText}>
-                            No users found. Only existing ShareFare users can be added to groups.
+                            No users found. Only existing ChopBill users can be added to groups.
                           </Text>
                           <Text style={styles.hintText}>
                             Share the app with your friends so they can join your groups!

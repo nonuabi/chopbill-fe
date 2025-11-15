@@ -9,8 +9,19 @@ const normalizeToken = (raw?: string | null) => {
 };
 
 export const buildAuthHeader = (token?: string | null) => {
-  const b = normalizeToken(token);
-  return b ? `Bearer ${b}` : "";
+  if (!token) {
+    return "";
+  }
+  
+  // Remove any quotes and trim whitespace
+  let cleanToken = token.trim().replace(/^["']|["']$/g, "");
+  
+  // If it already starts with "Bearer ", remove it (we'll add it back)
+  if (cleanToken.toLowerCase().startsWith("bearer ")) {
+    cleanToken = cleanToken.substring(7).trim();
+  }
+  
+  return cleanToken ? `Bearer ${cleanToken}` : "";
 };
 
 export const TOKEN_KEY = "sf_token";
@@ -56,6 +67,11 @@ export const validateSession = async (timeoutMs: number = 3000): Promise<boolean
       return false;
     }
 
+    const authHeader = buildAuthHeader(token);
+    if (!authHeader) {
+      return false;
+    }
+
     // Use AbortController for proper fetch cancellation
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -65,7 +81,7 @@ export const validateSession = async (timeoutMs: number = 3000): Promise<boolean
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: buildAuthHeader(token),
+          Authorization: authHeader,
         },
         signal: controller.signal,
       });
@@ -83,7 +99,6 @@ export const validateSession = async (timeoutMs: number = 3000): Promise<boolean
       
       // Check if it was aborted (timeout)
       if (fetchError.name === 'AbortError') {
-        console.error("Session validation timeout");
         throw new Error("Session validation timeout");
       }
       
@@ -91,7 +106,6 @@ export const validateSession = async (timeoutMs: number = 3000): Promise<boolean
       throw fetchError;
     }
   } catch (error) {
-    console.error("Session validation error:", error);
     // On timeout or network error, assume invalid session
     try {
       await SecureStore.deleteItemAsync(TOKEN_KEY);

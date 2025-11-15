@@ -37,7 +37,6 @@ export default function Index() {
           router.replace("/(auth)/LoginScreen");
         }
       } catch (e) {
-        console.log("Auth check failed", e);
         if (isMounted) {
           router.replace("/(auth)/LoginScreen");
         }

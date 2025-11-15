@@ -12,12 +12,23 @@ export default function TabsLayout() {
   
   useEffect(() => {
     const checkSession = async () => {
-      const isValid = await validateSession();
-      if (!isValid) {
-        router.replace("/(auth)/LoginScreen");
+      // Only validate session if we're already in the tabs (not on initial mount from auth)
+      // The index.tsx already handles initial authentication check
+      // This is a secondary check that runs less aggressively
+      try {
+        const isValid = await validateSession(5000); // Longer timeout for tabs validation
+        if (!isValid) {
+          router.replace("/(auth)/LoginScreen");
+        }
+      } catch (error) {
+        // On error, don't immediately redirect - let the user stay if they're already here
+        // The index.tsx will handle authentication on next app start
+        console.error("Tabs layout session check error:", error);
       }
     };
-    checkSession();
+    // Add a small delay to avoid race conditions with initial auth check
+    const timeoutId = setTimeout(checkSession, 1000);
+    return () => clearTimeout(timeoutId);
   }, [router]);
 
   return (
