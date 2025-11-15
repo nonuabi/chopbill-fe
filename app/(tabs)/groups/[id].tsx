@@ -1,11 +1,11 @@
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import * as SecureStore from "expo-secure-store";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -22,6 +22,8 @@ import ProfileAvatar from "../../components/ProfileAvtar";
 import { colors } from "../../styles/colors";
 import { common } from "../../styles/common";
 import { API_BASE, authenticatedFetch, TOKEN_KEY } from "../../utils/auth";
+import { useToast } from "../../contexts/ToastContext";
+import { extractErrorMessage, getSuccessMessage } from "../../utils/toast";
 
 type GroupMember = { 
   id?: string | number; 
@@ -72,6 +74,7 @@ type Group = {
 
 export default function GroupDetailsScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,7 +82,9 @@ export default function GroupDetailsScreen() {
   const [groupInviteUrl, setGroupInviteUrl] = useState<string>("");
   const [sharingInvite, setSharingInvite] = useState(false);
 
-  const fetchGroupDetails = async () => {
+  const fetchGroupDetails = useCallback(async () => {
+    if (!id) return;
+    
     try {
       const res = await authenticatedFetch(`${API_BASE}/api/groups/${id}`, {
         method: "GET",
@@ -91,32 +96,39 @@ export default function GroupDetailsScreen() {
       }
 
       if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || "Failed to fetch group details");
+        const errorMsg = await extractErrorMessage(res);
+        throw new Error(errorMsg || "Failed to fetch group details");
       }
       const data = await res.json();
       console.log("Group details response:", data);
       setGroup(data?.group || data);
     } catch (e: any) {
       console.log("Group details error =>", e?.message);
-      Alert.alert("Error", "Could not load group details.");
+      if (!refreshing) {
+        showToast("Could not load group details. Pull down to refresh.", "error");
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
-
-  useEffect(() => {
-    fetchGroupDetails();
-    // Only fetch invite when group is loaded (lazy load)
-    // Don't block group details view if invite fetch fails
   }, [id]);
 
-  const onRefresh = () => {
+  // Refresh data when screen comes into focus (e.g., after creating a group)
+  // This ensures fresh data when navigating to a newly created group
+  useFocusEffect(
+    useCallback(() => {
+      if (id) {
+        setLoading(true);
+        fetchGroupDetails();
+      }
+    }, [id, fetchGroupDetails])
+  );
+
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchGroupDetails();
     // Don't fetch invite on refresh - only when user wants to share
-  };
+  }, [fetchGroupDetails]);
 
   const fetchGroupInvite = async (): Promise<string | null> => {
     try {
@@ -163,10 +175,7 @@ export default function GroupDetailsScreen() {
         inviteUrl = await fetchGroupInvite();
         if (!inviteUrl) {
           setSharingInvite(false);
-          Alert.alert(
-            "Unable to Share",
-            "Could not generate invite link. You may need to be a member of this group to share invites."
-          );
+          showToast("Could not generate invite link. You may need to be a member of this group to share invites.", "error", 4000);
           return;
         }
       }
@@ -189,11 +198,11 @@ export default function GroupDetailsScreen() {
           console.log("Share dismissed");
         }
       } catch (error: any) {
-        Alert.alert("Error", error.message || "Could not share invite. Please try again.");
+        showToast(error.message || "Could not share invite. Please try again.", "error");
       }
     } catch (error) {
       console.error("Error sharing invite:", error);
-      Alert.alert("Error", "Could not share invite. Please try again.");
+      showToast("Could not share invite. Please try again.", "error");
     } finally {
       setSharingInvite(false);
     }
@@ -493,10 +502,7 @@ export default function GroupDetailsScreen() {
                   <Pressable
                     style={[styles.actionBtn, styles.actionBtnSecondary]}
                     onPress={() => {
-                      Alert.alert(
-                        "Settle Up",
-                        "This feature will be available soon!"
-                      );
+                      showToast("Settle Up feature coming soon! 🚀", "info");
                     }}
                   >
                     <Text style={styles.actionBtnSecondaryText}>

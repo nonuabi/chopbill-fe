@@ -1,29 +1,56 @@
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
+import * as SecureStore from "expo-secure-store";
 import { common } from "./styles/common";
-import { validateSession } from "./utils/auth";
+import { TOKEN_KEY, validateSession } from "./utils/auth";
 
 export default function Index() {
   const [checking, setChecking] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
+    let isMounted = true;
+    
     (async () => {
       try {
-        const isValid = await validateSession();
+        // First check if token exists - if not, redirect immediately
+        const token = await SecureStore.getItemAsync(TOKEN_KEY);
+        
+        if (!isMounted) return;
+        
+        if (!token) {
+          // No token, redirect to login immediately
+          router.replace("/(auth)/LoginScreen");
+          setChecking(false);
+          return;
+        }
+
+        // Token exists, validate it with a 2 second timeout
+        const isValid = await validateSession(2000);
+        
+        if (!isMounted) return;
+        
         if (isValid) {
-          router.replace("/home");
+          router.replace("/(tabs)/home");
         } else {
           router.replace("/(auth)/LoginScreen");
         }
       } catch (e) {
         console.log("Auth check failed", e);
-        router.replace("/(auth)/LoginScreen");
+        if (isMounted) {
+          router.replace("/(auth)/LoginScreen");
+        }
       } finally {
-        setChecking(false);
+        if (isMounted) {
+          setChecking(false);
+        }
       }
     })();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [router]);
 
   if (checking) {

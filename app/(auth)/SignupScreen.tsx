@@ -3,7 +3,6 @@ import * as SecureStore from "expo-secure-store";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,6 +14,8 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "../styles/colors";
 import { common } from "../styles/common";
 import { authStyles } from "./styles";
+import { useToast } from "../contexts/ToastContext";
+import { extractErrorMessage } from "../utils/toast";
 
 const API_BASE = "http://10.0.2.2:3000";
 const TOKEN_KEY = "sf_token";
@@ -29,6 +30,7 @@ const isPhoneNumber = (v: string) => {
 
 export default function SignupScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -36,6 +38,8 @@ export default function SignupScreen() {
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
@@ -65,10 +69,15 @@ export default function SignupScreen() {
 
   const canSubmit = Object.keys(errors).length === 0 && !loading && name.trim() && (email.trim() || phoneNumber.trim());
 
+  const shouldShowError = (field: string) => {
+    return (touched[field] || submitAttempted) && !!errors[field];
+  };
+
   const onSubmit = async () => {
+    setSubmitAttempted(true);
     if (!canSubmit) {
-      const first = Object.values(errors)[0] || "Fix the errors above";
-      Alert.alert("Hold up", first);
+      const first = Object.values(errors)[0] || "Please fix the errors above";
+      showToast(first, "warning");
       return;
     }
 
@@ -92,15 +101,15 @@ export default function SignupScreen() {
       });
       console.log("sign up api response: ", res);
       if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || "Signup failed");
+        const errorMsg = await extractErrorMessage(res);
+        throw new Error(errorMsg || "Sign up failed. Please try again.");
       }
       const data = await res.json().catch(() => ({}));
       let token = data?.token;
       await SecureStore.setItemAsync(TOKEN_KEY, token);
       router.replace("/home");
     } catch (e: any) {
-      Alert.alert("Sign up failed", e?.message || "Something went wrong");
+      showToast(e?.message || "Sign up failed. Please check your information and try again.", "error", 4000);
     } finally {
       setLoading(false);
     }
@@ -118,18 +127,22 @@ export default function SignupScreen() {
             </Text>
             <TextInput
               value={name}
-              onChangeText={setName}
+              onChangeText={(text) => {
+                setName(text);
+                setTouched((prev) => ({ ...prev, name: true }));
+              }}
+              onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
               autoCapitalize="words"
               autoCorrect={false}
               placeholder="Your name"
               style={[
                 authStyles.input,
-                errors.name && styles.inputError
+                shouldShowError("name") && styles.inputError
               ]}
               textContentType="name"
               placeholderTextColor="#9CA3AF"
             />
-            {errors.name && <Text style={styles.error}>{errors.name}</Text>}
+            {shouldShowError("name") && <Text style={styles.error}>{errors.name}</Text>}
 
             <Text style={styles.label}>
               Email <Text style={styles.required}>*</Text>
@@ -137,19 +150,23 @@ export default function SignupScreen() {
             </Text>
             <TextInput
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                setTouched((prev) => ({ ...prev, email: true }));
+              }}
+              onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
               placeholder="you@example.com"
               style={[
                 authStyles.input,
-                errors.email && styles.inputError
+                shouldShowError("email") && styles.inputError
               ]}
               textContentType="emailAddress"
               placeholderTextColor="#9CA3AF"
             />
-            {errors.email && <Text style={styles.error}>{errors.email}</Text>}
+            {shouldShowError("email") && <Text style={styles.error}>{errors.email}</Text>}
 
             <Text style={[styles.label, { marginTop: 12 }]}>
               Phone Number <Text style={styles.required}>*</Text>
@@ -157,20 +174,24 @@ export default function SignupScreen() {
             </Text>
             <TextInput
               value={phoneNumber}
-              onChangeText={setPhoneNumber}
+              onChangeText={(text) => {
+                setPhoneNumber(text);
+                setTouched((prev) => ({ ...prev, phoneNumber: true }));
+              }}
+              onBlur={() => setTouched((prev) => ({ ...prev, phoneNumber: true }))}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="phone-pad"
               placeholder="+1234567890"
               style={[
                 authStyles.input,
-                errors.phoneNumber && styles.inputError
+                shouldShowError("phoneNumber") && styles.inputError
               ]}
               textContentType="telephoneNumber"
               placeholderTextColor="#9CA3AF"
             />
-            {errors.phoneNumber && <Text style={styles.error}>{errors.phoneNumber}</Text>}
-            {errors.contact && <Text style={styles.error}>{errors.contact}</Text>}
+            {shouldShowError("phoneNumber") && <Text style={styles.error}>{errors.phoneNumber}</Text>}
+            {shouldShowError("contact") && <Text style={styles.error}>{errors.contact}</Text>}
             {(!email.trim() && !phoneNumber.trim()) && (
               <Text style={styles.hint}>
                 * Please provide either email or phone number
@@ -183,13 +204,17 @@ export default function SignupScreen() {
             <View style={styles.row}>
               <TextInput
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setTouched((prev) => ({ ...prev, password: true }));
+                }}
+                onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
                 secureTextEntry={!showPassword}
                 placeholder="••••••••"
                 style={[
                   authStyles.input,
                   styles.flex,
-                  errors.password && styles.inputError,
+                  shouldShowError("password") && styles.inputError,
                 ]}
                 textContentType="newPassword"
                 placeholderTextColor="#9CA3AF"
@@ -201,7 +226,7 @@ export default function SignupScreen() {
                 <Text>{showPassword ? "Hide" : "Show"}</Text>
               </Pressable>
             </View>
-            {errors.password && (
+            {shouldShowError("password") && (
               <Text style={styles.error}>{errors.password}</Text>
             )}
 
@@ -210,17 +235,21 @@ export default function SignupScreen() {
             </Text>
             <TextInput
               value={confirm}
-              onChangeText={setConfirm}
+              onChangeText={(text) => {
+                setConfirm(text);
+                setTouched((prev) => ({ ...prev, confirm: true }));
+              }}
+              onBlur={() => setTouched((prev) => ({ ...prev, confirm: true }))}
               secureTextEntry={!showPassword}
               placeholder="••••••••"
               style={[
                 authStyles.input,
-                errors.confirm && styles.inputError
+                shouldShowError("confirm") && styles.inputError
               ]}
               textContentType="newPassword"
               placeholderTextColor="#9CA3AF"
             />
-            {errors.confirm && (
+            {shouldShowError("confirm") && (
               <Text style={styles.error}>{errors.confirm}</Text>
             )}
 

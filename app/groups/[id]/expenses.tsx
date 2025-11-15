@@ -4,7 +4,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -18,6 +17,8 @@ import ListCard from "../../components/ListCard";
 import { colors } from "../../styles/colors";
 import { common } from "../../styles/common";
 import { API_BASE, authenticatedFetch } from "../../utils/auth";
+import { useToast } from "../../contexts/ToastContext";
+import { extractErrorMessage } from "../../utils/toast";
 
 type Expense = {
   id: number;
@@ -37,6 +38,7 @@ type Expense = {
 
 export default function GroupExpensesScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,8 +57,8 @@ export default function GroupExpensesScreen() {
       }
 
       if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || "Failed to fetch expenses");
+        const errorMsg = await extractErrorMessage(res);
+        throw new Error(errorMsg || "Failed to fetch expenses");
       }
 
       const data = await res.json();
@@ -70,7 +72,7 @@ export default function GroupExpensesScreen() {
       setGroupName(groupData?.name || "Group");
     } catch (e: any) {
       console.log("Error fetching expenses =>", e?.message);
-      Alert.alert("Error", "Could not load expenses.");
+      showToast("Could not load expenses. Pull down to refresh.", "error");
     } finally {
       setLoading(false);
       setRefreshing(false);

@@ -4,7 +4,6 @@ import * as SecureStore from "expo-secure-store";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Keyboard,
   KeyboardAvoidingView,
@@ -23,6 +22,8 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "../../styles/colors";
 import { common } from "../../styles/common";
 import { API_BASE, authenticatedFetch, TOKEN_KEY } from "../../utils/auth";
+import { useToast } from "../../contexts/ToastContext";
+import { extractErrorMessage, getSuccessMessage } from "../../utils/toast";
 import ProfileAvatar from "../../components/ProfileAvtar";
 
 // Currency formatter helper
@@ -91,6 +92,7 @@ const formatDate = (dateString?: string): string => {
 
 export default function GroupsScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [groups, setGroups] = useState<
     {
       id: string;
@@ -147,15 +149,15 @@ export default function GroupsScreen() {
       }
 
       if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || "Failed to fetch user groups");
+        const errorMsg = await extractErrorMessage(res);
+        throw new Error(errorMsg || "Failed to fetch user groups");
       }
       const data = await res.json();
       setGroups(data?.groups || []);
     } catch (e: any) {
       console.log("Error from fetching group list => ", e);
       if (!refreshing) {
-        Alert.alert("Error", "Failed to load groups. Please try again.");
+        showToast(e?.message || "Could not load groups. Pull down to refresh.", "error");
       }
     } finally {
       setLoading(false);
@@ -183,7 +185,7 @@ export default function GroupsScreen() {
     } catch (e: any) {
       console.log("Error from fetching users list => ", e);
       if (!refreshing) {
-        Alert.alert("Error", "Failed to load users. Please try again.");
+        showToast("Could not load users. Please try again.", "error");
       }
     }
   }, [refreshing]);
@@ -216,12 +218,29 @@ export default function GroupsScreen() {
   }, [groups, searchQuery]);
 
   const emailResults = useMemo(() => {
-    return userList.filter(
-      (u) =>
-        normalized(u.email || u.phone_number).includes(normalized(memberQuery)) ||
-        normalized(u.name).includes(normalized(memberQuery))
+    // Get identifiers of already selected members
+    const selectedIdentifiers = new Set(
+      selectedMembers.map((m) => 
+        normalized(m.email || m.phone_number)
+      )
     );
-  }, [userList, memberQuery]);
+    
+    return userList.filter(
+      (u) => {
+        // Check if user matches search query
+        const matchesQuery = 
+          normalized(u.email || u.phone_number).includes(normalized(memberQuery)) ||
+          normalized(u.name).includes(normalized(memberQuery));
+        
+        // Check if user is already selected
+        const userIdentifier = normalized(u.email || u.phone_number);
+        const isAlreadySelected = selectedIdentifiers.has(userIdentifier);
+        
+        // Show only if matches query AND not already selected
+        return matchesQuery && !isAlreadySelected;
+      }
+    );
+  }, [userList, memberQuery, selectedMembers]);
 
   const addMemberByEmail = (
     email?: string,
@@ -248,11 +267,11 @@ export default function GroupsScreen() {
     try {
       if (isSaving) return;
       if (!groupName.trim()) {
-        Alert.alert("Validation", "Please enter a group name.");
+        showToast("Please enter a group name", "warning");
         return;
       }
       if (selectedMembers.length === 0) {
-        Alert.alert("Validation", "Please add at least one member.");
+        showToast("Please add at least one member to create a group", "warning");
         return;
       }
       setIsSaving(true);
@@ -277,8 +296,8 @@ export default function GroupsScreen() {
       }
 
       if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || "Failed to create a group");
+        const errorMsg = await extractErrorMessage(res);
+        throw new Error(errorMsg || "Failed to create a group");
       }
       const data = await res.json();
       console.log("Create group res => ", data?.group);
@@ -290,10 +309,10 @@ export default function GroupsScreen() {
       setSelectedMembers([]);
       setMemberQuery("");
       setIsModalOpen(false);
-      Alert.alert("Success", "Group created successfully!");
+      showToast(getSuccessMessage("create_group"), "success");
     } catch (e: any) {
       console.log("Error while creating group -> ", e);
-      Alert.alert("Error", e?.message || "Could not create group!");
+      showToast(e?.message || "Could not create group. Please try again.", "error", 4000);
     } finally {
       setIsSaving(false);
     }

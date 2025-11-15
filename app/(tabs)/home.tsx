@@ -28,6 +28,10 @@ type OutstandingBalance = {
   };
   amount: number;
   direction: "+" | "-";
+  groups?: Array<{
+    id: number;
+    name: string;
+  }>;
 };
 
 type RecentExpense = {
@@ -294,7 +298,7 @@ export default function HomeScreen() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Outstanding Balances</Text>
               {data.outstanding_balances.length > 0 && (
-                <Pressable onPress={() => router.push("/(tabs)/groups")}>
+                <Pressable onPress={() => router.push("/dashboard/balances")}>
                   <Text style={styles.seeAllText}>View all</Text>
                 </Pressable>
               )}
@@ -325,7 +329,13 @@ export default function HomeScreen() {
                     avatarUrl={item.user.avatar_url}
                     userId={item.user.id}
                     onPress={() => {
-                      router.push("/(tabs)/groups");
+                      // Navigate to the first group where there's a balance with this user
+                      if (item.groups && item.groups.length > 0) {
+                        router.push(`/(tabs)/groups/${item.groups[0].id}`);
+                      } else {
+                        // Fallback to groups list if no group info available
+                        router.push("/(tabs)/groups");
+                      }
                     }}
                   />
                 )}
@@ -338,7 +348,7 @@ export default function HomeScreen() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Recent Expenses</Text>
               {data.recent_expenses.length > 0 && (
-                <Pressable onPress={() => router.push("/(tabs)/groups")}>
+                <Pressable onPress={() => router.push("/dashboard/expenses")}>
                   <Text style={styles.seeAllText}>See all</Text>
                 </Pressable>
               )}

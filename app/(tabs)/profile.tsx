@@ -25,9 +25,12 @@ import ProfileAvatar from "../components/ProfileAvtar";
 import { colors } from "../styles/colors";
 import { common } from "../styles/common";
 import { API_BASE, authenticatedFetch, handleAuthError, logout as authLogout, TOKEN_KEY } from "../utils/auth";
+import { useToast } from "../contexts/ToastContext";
+import { extractErrorMessage, getSuccessMessage } from "../utils/toast";
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [user, setUser] = useState<{ 
     id?: number | string;
     name?: string; 
@@ -75,21 +78,18 @@ export default function ProfileScreen() {
       }
 
       if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || "Failed to update profile");
+        const errorMsg = await extractErrorMessage(res);
+        throw new Error(errorMsg || "Failed to update profile");
       }
       const data = await res.json();
       console.log("update proflie res => ", data);
-      const updated = data?.data;
-      setUser((prev) => ({
-        ...(prev || {}),
-        ...updated,
-      }));
       setIsEditOpen(false);
-      Alert.alert("success", "Profile updated successfully");
+      showToast(getSuccessMessage("update_profile"), "success");
+      // Refresh user data from server to ensure we have the latest data
+      await fetchUser();
     } catch (e: any) {
       console.log("update profile error -> ", e);
-      Alert.alert("Error", e?.message || "Could not update profile");
+      showToast(e?.message || "Could not update profile. Please try again.", "error", 4000);
     } finally {
       setSaving(false);
     }
@@ -101,7 +101,7 @@ export default function ProfileScreen() {
     } catch (e) {
       console.error("Logout error:", e);
       // authLogout handles errors internally, but show user-friendly message
-      Alert.alert("Error", "Could not log out, please try again.");
+      showToast("Could not log out. Please try again.", "error");
     }
   };
 
@@ -116,13 +116,16 @@ export default function ProfileScreen() {
         return;
       }
 
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errorMsg = await extractErrorMessage(res);
+        throw new Error(errorMsg || "Failed to load profile");
+      }
       const data = await res.json();
       setUser(data?.data);
     } catch (e: any) {
       console.log("profile error!", e);
       if (!refreshing) {
-        Alert.alert("Error", "Could not load profile data");
+        showToast(e?.message || "Could not load profile data. Pull down to refresh.", "error");
       }
     } finally {
       setRefreshing(false);
@@ -188,11 +191,11 @@ export default function ProfileScreen() {
           console.log("Share dismissed");
         }
       } catch (error: any) {
-        Alert.alert("Error", error.message || "Could not share invite. Please try again.");
+        showToast(error.message || "Could not share invite. Please try again.", "error");
       }
     } catch (error) {
       console.error("Error sharing invite:", error);
-      Alert.alert("Error", "Could not share invite. Please try again.");
+      showToast("Could not share invite. Please try again.", "error");
     } finally {
       setSharingInvite(false);
     }

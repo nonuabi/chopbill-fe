@@ -4,7 +4,6 @@ import * as SecureStore from "expo-secure-store";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -22,9 +21,12 @@ import FormInput from "../components/FormInput";
 import { colors } from "../styles/colors";
 import { common } from "../styles/common";
 import { API_BASE, authenticatedFetch, TOKEN_KEY } from "../utils/auth";
+import { useToast } from "../contexts/ToastContext";
+import { extractErrorMessage, getSuccessMessage } from "../utils/toast";
 
 export default function ExpensesScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { group: groupParam } = useLocalSearchParams<{ group?: string }>();
   
   const [description, setDescription] = useState("");
@@ -122,7 +124,7 @@ export default function ExpensesScreen() {
           }
         } catch (e: any) {
           console.log("Error while fetching groups -> ", e);
-          Alert.alert("Error", "Could not load groups");
+          showToast("Could not load groups. Please try again.", "error");
         } finally {
           if (isActive) {
             setGroupsLoading(false);
@@ -188,7 +190,7 @@ export default function ExpensesScreen() {
         }
       } catch (e: any) {
         console.log("Error while fetching group members -> ", e);
-        Alert.alert("Error", "Could not load group members");
+        showToast("Could not load group members. Please try again.", "error");
       } finally {
         if (isMounted) {
           setPeopleLoading(false);
@@ -215,7 +217,7 @@ export default function ExpensesScreen() {
   const toggleSplitMember = (id: string) => {
     // Don't allow removing the payer from split
     if (id === paidBy) {
-      Alert.alert("Cannot remove", "The person who paid must be included in the split.");
+      showToast("The person who paid must be included in the split.", "warning");
       return;
     }
     setSplitMembers((prev) =>
@@ -232,7 +234,7 @@ export default function ExpensesScreen() {
         errors.group ||
         errors.paidBy ||
         errors.split;
-      Alert.alert("Fix the form", first ?? "Please check the fields");
+      showToast(first ?? "Please check the fields", "warning");
       return;
     }
     
@@ -258,35 +260,32 @@ export default function ExpensesScreen() {
       }
 
       if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || "Failed to create expense");
+        const errorMsg = await extractErrorMessage(res);
+        throw new Error(errorMsg || "Failed to create expense");
       }
 
       const data = await res.json();
       console.log("Create Expense response => ", data);
 
-      Alert.alert("Success", "Expense added successfully!", [
-        {
-          text: "OK",
-          onPress: () => {
-            // Reset form
-            setDescription("");
-            setAmount("");
-            setNotes("");
-            setPaidBy(null);
-            setSplitMembers([]);
-            setTouched({});
-            
-            // Navigate back if came from group detail page
-            if (groupParam) {
-              router.back();
-            }
-          },
-        },
-      ]);
+      showToast(getSuccessMessage("create_expense"), "success");
+      // Reset form
+      setTimeout(() => {
+        setDescription("");
+        setAmount("");
+        setNotes("");
+        setPaidBy(null);
+        setSplitMembers([]);
+        setTouched({});
+        
+        // Navigate back if came from group detail page
+        if (groupParam) {
+          router.back();
+        }
+      }, 1000);
     } catch (e: any) {
       console.error("Error creating expense:", e);
-      Alert.alert("Error", e?.message || "Failed to create expense. Please try again.");
+      const errorMsg = e?.message || "Failed to create expense. Please try again.";
+      showToast(errorMsg, "error", 4000);
     } finally {
       setSaving(false);
     }

@@ -3,7 +3,6 @@ import * as SecureStore from "expo-secure-store";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,6 +15,8 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "../styles/colors";
 import { common } from "../styles/common";
 import { authStyles } from "./styles";
+import { useToast } from "../contexts/ToastContext";
+import { extractErrorMessage } from "../utils/toast";
 
 const API_BASE = "http://10.0.2.2:3000";
 const TOKEN_KEY = "sf_token";
@@ -32,10 +33,13 @@ const isPhoneNumber = (v: string) => {
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [login, setLogin] = useState(""); // Can be email or phone
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const loginType = useMemo(() => {
     if (isEmail(login)) return "email";
@@ -56,10 +60,15 @@ export default function LoginScreen() {
 
   const canSubmit = Object.keys(errors).length === 0 && !loading;
 
+  const shouldShowError = (field: string) => {
+    return (touched[field] || submitAttempted) && !!errors[field];
+  };
+
   const onSubmit = async () => {
+    setSubmitAttempted(true);
     if (!canSubmit) {
-      const first = Object.values(errors)[0] || "Fix the errors above";
-      Alert.alert("Hold up", first);
+      const first = Object.values(errors)[0] || "Please fix the errors above";
+      showToast(first, "warning");
       return;
     }
 
@@ -81,18 +90,18 @@ export default function LoginScreen() {
       console.log("login api response status: ", res.status);
       console.log("login api response: ", res);
       if (!res.ok) {
-        const errorText = await res.text();
-        console.log("Error response: ", errorText);
-        throw new Error(errorText || `HTTP ${res.status}`);
+        const errorMsg = await extractErrorMessage(res);
+        throw new Error(errorMsg || `Login failed (${res.status})`);
       }
       const data = await res.json();
       const token = data?.token;
       if (!token) throw new Error("Missing token in response");
       await SecureStore.setItemAsync(TOKEN_KEY, token);
-      router.replace("/home");
+      showToast("Welcome back! 🎉", "success", 2000);
+      setTimeout(() => router.replace("/home"), 500);
     } catch (e: any) {
       console.error("Login error: ", e);
-      Alert.alert("Login failed", e?.message || "Something went wrong");
+      showToast(e?.message || "Login failed. Please check your credentials and try again.", "error", 4000);
     } finally {
       setLoading(false);
     }
@@ -119,19 +128,23 @@ export default function LoginScreen() {
           <Text style={styles.label}>Email or Phone Number</Text>
           <TextInput
             value={login}
-            onChangeText={setLogin}
+            onChangeText={(text) => {
+              setLogin(text);
+              setTouched((prev) => ({ ...prev, login: true }));
+            }}
+            onBlur={() => setTouched((prev) => ({ ...prev, login: true }))}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType={getKeyboardType()}
             placeholder={getPlaceholder()}
             style={[
               authStyles.input,
-              errors.login && styles.inputError
+              shouldShowError("login") && styles.inputError
             ]}
             textContentType="username"
             placeholderTextColor="#9CA3AF"
           />
-          {errors.login && <Text style={styles.error}>{errors.login}</Text>}
+          {shouldShowError("login") && <Text style={styles.error}>{errors.login}</Text>}
           {loginType !== "unknown" && login.trim() && (
             <Text style={styles.hint}>
               {loginType === "email" ? "✓ Email" : "✓ Phone number"}
@@ -142,13 +155,17 @@ export default function LoginScreen() {
           <View style={styles.row}>
             <TextInput
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                setTouched((prev) => ({ ...prev, password: true }));
+              }}
+              onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
               secureTextEntry={!showPassword}
               placeholder="••••••••"
               style={[
                 authStyles.input,
                 styles.flex,
-                errors.password && styles.inputError,
+                shouldShowError("password") && styles.inputError,
               ]}
               textContentType="password"
               placeholderTextColor="#9CA3AF"
@@ -160,7 +177,7 @@ export default function LoginScreen() {
               <Text>{showPassword ? "Hide" : "Show"}</Text>
             </Pressable>
           </View>
-          {errors.password && (
+          {shouldShowError("password") && (
             <Text style={styles.error}>{errors.password}</Text>
           )}
 

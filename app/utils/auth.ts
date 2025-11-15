@@ -49,29 +49,55 @@ export const handleAuthError = async (status: number): Promise<boolean> => {
  * Validates the current session by checking if the token is still valid
  * Returns true if session is valid, false otherwise
  */
-export const validateSession = async (): Promise<boolean> => {
+export const validateSession = async (timeoutMs: number = 3000): Promise<boolean> => {
   try {
     const token = await SecureStore.getItemAsync(TOKEN_KEY);
     if (!token) {
       return false;
     }
 
-    const res = await fetch(`${API_BASE}/api/me`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: buildAuthHeader(token),
-      },
-    });
+    // Use AbortController for proper fetch cancellation
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-    if (isAuthError(res.status)) {
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
-      return false;
+    try {
+      const res = await fetch(`${API_BASE}/api/me`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: buildAuthHeader(token),
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (isAuthError(res.status)) {
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        return false;
+      }
+
+      return res.ok;
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      
+      // Check if it was aborted (timeout)
+      if (fetchError.name === 'AbortError') {
+        console.error("Session validation timeout");
+        throw new Error("Session validation timeout");
+      }
+      
+      // Re-throw other errors
+      throw fetchError;
     }
-
-    return res.ok;
   } catch (error) {
     console.error("Session validation error:", error);
+    // On timeout or network error, assume invalid session
+    try {
+      await SecureStore.deleteItemAsync(TOKEN_KEY);
+    } catch (e) {
+      // Ignore errors when clearing token
+    }
     return false;
   }
 };
