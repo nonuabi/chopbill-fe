@@ -30,6 +30,44 @@ const formatCurrency = (amount: number): string => {
   return `₹${Math.abs(amount).toFixed(2)}`;
 };
 
+// Get group initials (first 2 letters)
+const getGroupInitials = (name: string): string => {
+  if (!name) return "GR";
+  const words = name.trim().split(/\s+/);
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase().slice(0, 2);
+  }
+  return name.slice(0, 2).toUpperCase();
+};
+
+// Generate a consistent color for a group based on its name
+const getGroupColor = (name: string): string => {
+  if (!name) return colors.primary;
+  
+  // Simple hash function to generate consistent color
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  // Generate a color from the hash (using a nice color palette)
+  const colors_palette = [
+    "#6366F1", // Indigo
+    "#8B5CF6", // Purple
+    "#EC4899", // Pink
+    "#F59E0B", // Amber
+    "#10B981", // Emerald
+    "#06B6D4", // Cyan
+    "#F97316", // Orange
+    "#84CC16", // Lime
+    "#14B8A6", // Teal
+    "#A855F7", // Violet
+  ];
+  
+  const index = Math.abs(hash) % colors_palette.length;
+  return colors_palette[index];
+};
+
 // Format date helper
 const formatDate = (dateString?: string): string => {
   if (!dateString) return "";
@@ -383,15 +421,14 @@ export default function GroupsScreen() {
                       <View style={styles.itemHeader}>
                         <View style={styles.itemLeft}>
                           <View style={[
-                            styles.groupIcon,
-                            isPositive && styles.groupIconPositive,
-                            isNegative && styles.groupIconNegative,
+                            styles.groupInitials,
+                            isPositive && { backgroundColor: colors.green, borderColor: colors.green },
+                            isNegative && { backgroundColor: colors.danger, borderColor: colors.danger },
+                            !isPositive && !isNegative && { backgroundColor: getGroupColor(item.name) },
                           ]}>
-                            <Feather 
-                              name="users" 
-                              size={20} 
-                              color={isPositive ? colors.green : isNegative ? colors.danger : colors.primary} 
-                            />
+                            <Text style={styles.groupInitialsText}>
+                              {getGroupInitials(item.name)}
+                            </Text>
                           </View>
                           <View style={styles.itemTextContainer}>
                             <Text style={styles.itemName} numberOfLines={1}>
@@ -804,16 +841,22 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
-  groupIcon: {
+  groupInitials: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
     borderWidth: 2,
     borderColor: "#E5E7EB",
+  },
+  groupInitialsText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#fff",
+    letterSpacing: 0.5,
   },
   groupIconPositive: {
     backgroundColor: "#F0FDF4",
