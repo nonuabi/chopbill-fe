@@ -477,74 +477,44 @@ export default function GroupsScreen() {
                         </View>
                       </View>
 
-                      {/* Members Avatars Section */}
-                      {memberAvatars.length > 0 && (
-                        <View style={styles.membersSection}>
-                          <View style={styles.membersAvatars}>
-                            {memberAvatars.slice(0, 4).map((member, idx) => (
-                              <View
-                                key={member.id}
-                                style={[
-                                  styles.avatarWrapper,
-                                  idx > 0 && { marginLeft: -8 },
-                                ]}
-                              >
-                                <ProfileAvatar
-                                  fullName={member.name}
-                                  size={32}
-                                  avatarUrl={member.avatar_url}
-                                  userId={member.id}
-                                />
-                              </View>
-                            ))}
-                            {item.member_count > 4 && (
-                              <View style={[styles.avatarWrapper, styles.avatarOverflow, { marginLeft: -8 }]}>
-                                <Text style={styles.avatarOverflowText}>
-                                  +{item.member_count - 4}
-                                </Text>
-                              </View>
-                            )}
-                          </View>
-                          {hasExpenses && item.last_expense_date && (
-                            <Text style={styles.lastExpenseText}>
-                              Last expense {formatDate(item.last_expense_date)}
-                            </Text>
-                          )}
-                        </View>
-                      )}
-
-                      {/* Recent Expenses Preview */}
-                      {recentExpenses.length > 0 && (
-                        <View style={styles.recentExpensesSection}>
-                          <View style={styles.recentExpensesHeader}>
-                            <Feather name="clock" size={14} color="#6B7280" />
-                            <Text style={styles.recentExpensesTitle}>Recent expenses</Text>
-                          </View>
-                          {recentExpenses.slice(0, 2).map((expense) => (
-                            <View key={expense.id} style={styles.recentExpenseItem}>
-                              <View style={styles.recentExpenseLeft}>
-                                <ProfileAvatar
-                                  fullName={expense.paid_by.name}
-                                  size={24}
-                                  avatarUrl={expense.paid_by.avatar_url}
-                                  userId={expense.paid_by.id}
-                                />
-                                <Text style={styles.recentExpenseDesc} numberOfLines={1}>
-                                  {expense.description}
-                                </Text>
-                              </View>
-                              <Text style={styles.recentExpenseAmount}>
-                                {formatCurrency(expense.amount)}
-                              </Text>
+                      {/* Members Avatars Section - Always show for consistent height */}
+                      <View style={styles.membersSection}>
+                        {memberAvatars.length > 0 ? (
+                          <>
+                            <View style={styles.membersAvatars}>
+                              {memberAvatars.slice(0, 4).map((member, idx) => (
+                                <View
+                                  key={member.id}
+                                  style={[
+                                    styles.avatarWrapper,
+                                    idx > 0 && { marginLeft: -8 },
+                                  ]}
+                                >
+                                  <ProfileAvatar
+                                    fullName={member.name}
+                                    size={32}
+                                    avatarUrl={member.avatar_url}
+                                    userId={member.id}
+                                  />
+                                </View>
+                              ))}
+                              {item.member_count > 4 && (
+                                <View style={[styles.avatarWrapper, styles.avatarOverflow, { marginLeft: -8 }]}>
+                                  <Text style={styles.avatarOverflowText}>
+                                    +{item.member_count - 4}
+                                  </Text>
+                                </View>
+                              )}
                             </View>
-                          ))}
-                          {expenseCount > 2 && (
-                            <Text style={styles.moreExpensesText}>
-                              +{expenseCount - 2} more {expenseCount - 2 === 1 ? "expense" : "expenses"}
+                          </>
+                        ) : (
+                          <View style={styles.membersAvatars}>
+                            <Text style={styles.emptyMembersText}>
+                              {item?.member_count || 0} {item?.member_count === 1 ? "member" : "members"}
                             </Text>
-                          )}
-                        </View>
-                      )}
+                          </View>
+                        )}
+                      </View>
 
                       {/* Footer Section */}
                       <View style={styles.itemFooter}>
@@ -827,13 +797,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
   },
   itemContent: {
-    padding: 18,
+    padding: 14,
   },
   itemHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 14,
+    marginBottom: 10,
   },
   itemLeft: {
     flexDirection: "row",
@@ -842,18 +812,18 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   groupInitials: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
+    marginRight: 10,
     borderWidth: 2,
     borderColor: "#E5E7EB",
   },
   groupInitialsText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     color: "#fff",
     letterSpacing: 0.5,
@@ -870,14 +840,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   itemName: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
     color: "#111827",
-    marginBottom: 5,
+    marginBottom: 3,
     letterSpacing: -0.2,
   },
   itemDescription: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#6B7280",
     marginTop: 2,
     fontWeight: "400",
@@ -887,9 +857,9 @@ const styles = StyleSheet.create({
     minWidth: 100,
   },
   balanceAmount: {
-    fontSize: 19,
+    fontSize: 17,
     fontWeight: "700",
-    marginBottom: 3,
+    marginBottom: 2,
     letterSpacing: 0.3,
   },
   balancePositive: {
@@ -924,16 +894,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   membersSection: {
-    marginTop: 12,
-    marginBottom: 12,
-    paddingTop: 12,
+    marginTop: 10,
+    marginBottom: 10,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: "#F3F4F6",
+    minHeight: 32, // Consistent height without last expense text
+  },
+  emptyMembersText: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    fontStyle: "italic",
   },
   membersAvatars: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
   },
   avatarWrapper: {
     borderWidth: 2,
@@ -956,10 +931,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#6B7280",
   },
+  lastExpenseContainer: {
+    minHeight: 16, // Consistent height for last expense text area
+    marginTop: 3,
+  },
   lastExpenseText: {
     fontSize: 11,
     color: "#9CA3AF",
-    marginTop: 4,
   },
   recentExpensesSection: {
     marginTop: 8,
@@ -1016,23 +994,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 16,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: "#F3F4F6",
     flexWrap: "wrap",
-    gap: 12,
+    gap: 10,
   },
   statItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
     backgroundColor: "#F9FAFB",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   statText: {
-    fontSize: 13,
+    fontSize: 11,
     color: "#374151",
     fontWeight: "600",
   },
