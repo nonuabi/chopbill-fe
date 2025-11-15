@@ -410,14 +410,14 @@ export default function GroupDetailsScreen() {
                       <Text style={styles.sectionTitle}>Recent Expenses</Text>
                       <Pressable
                         onPress={() =>
-                          router.push(`/(tabs)/expenses?group=${id}`)
+                          router.push(`/groups/${id}/expenses`)
                         }
                       >
                         <Text style={styles.seeAllText}>See all</Text>
                       </Pressable>
                     </View>
                     <View style={styles.card}>
-                      {recentExpenses.map((expense, idx) => (
+                      {recentExpenses.slice(0, 5).map((expense, idx) => (
                         <ListCard
                           key={expense.id || idx}
                           variant="expense"
