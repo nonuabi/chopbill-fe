@@ -4,6 +4,31 @@ import { useTheme } from "../contexts/ThemeContext";
 import { getColors } from "../styles/colors";
 import ProfileAvatar from "./ProfileAvtar";
 
+// Format amount to handle large numbers better
+// Only abbreviate when necessary to prevent layout issues
+const formatAmount = (amount: number): string => {
+  const absAmount = Math.abs(amount);
+  
+  // For very large amounts (>= 1 Crore), use abbreviated format
+  if (absAmount >= 10000000) {
+    // 1 Crore or more: show in Crores
+    const crores = amount / 10000000;
+    return crores.toFixed(crores >= 100 ? 0 : 1) + "Cr";
+  } else if (absAmount >= 100000) {
+    // 1 Lakh or more: show in Lakhs
+    const lakhs = amount / 100000;
+    return lakhs.toFixed(lakhs >= 100 ? 0 : 1) + "L";
+  }
+  
+  // For amounts less than 1 Lakh, show full amount with proper formatting
+  // Add comma separators for thousands
+  const formatted = absAmount.toFixed(2);
+  const parts = formatted.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const sign = amount < 0 ? '-' : '';
+  return sign + parts.join('.');
+};
+
 type ListCardVariant = "balance" | "expense";
 
 interface ListCardProps {
@@ -72,9 +97,13 @@ const ListCard: React.FC<ListCardProps> = ({
           </View>
         )}
         <View style={styles.titleBlock}>
-          <Text style={styles.titleText}>{name || "—"}</Text>
+          <Text style={styles.titleText} numberOfLines={1} ellipsizeMode="tail">
+            {name || "—"}
+          </Text>
           {variant === "expense" && !!subtitle && (
-            <Text style={styles.subtitleText}>{subtitle}</Text>
+            <Text style={styles.subtitleText} numberOfLines={1} ellipsizeMode="tail">
+              {subtitle}
+            </Text>
           )}
         </View>
       </View>
@@ -86,12 +115,15 @@ const ListCard: React.FC<ListCardProps> = ({
             variant === "balance" &&
               (isPositive ? styles.amountPositive : styles.amountNegative),
           ]}
+          numberOfLines={1}
+          adjustsFontSizeToFit={true}
+          minimumFontScale={0.7}
         >
           {variant === "balance" && direction ? direction : ""}
-          {typeof amount === "number" ? amount.toFixed(2) : amount}
+          {typeof amount === "number" ? formatAmount(amount) : amount}
         </Text>
         {variant === "balance" && (
-          <Text style={styles.metaText}>
+          <Text style={styles.metaText} numberOfLines={1}>
             {isPositive ? "owes you" : "you owe"}
           </Text>
         )}
@@ -130,11 +162,16 @@ const getStyles = (colors: ReturnType<typeof getColors>) => StyleSheet.create({
   leftSection: {
     flexDirection: "row",
     alignItems: "center",
+    flex: 1,
     flexShrink: 1,
+    minWidth: 0, // Important for text truncation
+    marginRight: 12,
   },
   titleBlock: {
     marginLeft: 10,
+    flex: 1,
     flexShrink: 1,
+    minWidth: 0, // Important for text truncation
   },
   titleText: {
     fontSize: 16,
@@ -148,11 +185,15 @@ const getStyles = (colors: ReturnType<typeof getColors>) => StyleSheet.create({
   },
   rightSection: {
     alignItems: "flex-end",
+    flexShrink: 0,
+    minWidth: 80, // Ensure minimum width for amount
+    maxWidth: "40%", // Prevent taking too much space
   },
   amountText: {
     fontSize: 18,
     fontWeight: "700",
     color: colors.text,
+    textAlign: "right",
   },
   amountPositive: {
     color: colors.green,

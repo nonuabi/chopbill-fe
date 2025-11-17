@@ -14,8 +14,9 @@ import {
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import ListCard from "../../components/ListCard";
-import { colors } from "../../styles/colors";
-import { common } from "../../styles/common";
+import { useTheme } from "../../contexts/ThemeContext";
+import { getColors } from "../../styles/colors";
+import { getCommonStyles } from "../../styles/common";
 import { API_BASE, authenticatedFetch } from "../../utils/auth";
 import { useToast } from "../../contexts/ToastContext";
 import { extractErrorMessage } from "../../utils/toast";
@@ -39,11 +40,15 @@ type Expense = {
 export default function GroupExpensesScreen() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const common = getCommonStyles(isDark);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [groupName, setGroupName] = useState<string>("");
+  const styles = getStyles(colors, isDark);
 
   const fetchExpenses = async () => {
     try {
@@ -139,7 +144,7 @@ export default function GroupExpensesScreen() {
               hitSlop={8}
               style={styles.backBtn}
             >
-              <AntDesign name="left" size={20} color="#111827" />
+              <AntDesign name="left" size={20} color={colors.text} />
             </Pressable>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={styles.headerTitle} numberOfLines={1}>
@@ -153,7 +158,7 @@ export default function GroupExpensesScreen() {
 
           {expenses.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Feather name="file-text" size={64} color="#D1D5DB" />
+              <Feather name="file-text" size={64} color={colors.textTertiary} />
               <Text style={styles.emptyTitle}>No expenses yet</Text>
               <Text style={styles.emptySubtitle}>
                 Start tracking expenses for this group
@@ -164,7 +169,7 @@ export default function GroupExpensesScreen() {
                   router.push(`/(tabs)/expenses?group=${id}`)
                 }
               >
-                <AntDesign name="plus" size={18} color="#fff" />
+                <AntDesign name="plus" size={18} color={colors.white} />
                 <Text style={styles.addExpenseBtnText}>Add Expense</Text>
               </Pressable>
             </View>
@@ -207,7 +212,7 @@ export default function GroupExpensesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -219,17 +224,17 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.borderLight,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: "#6B7280",
+    color: colors.textSecondary,
   },
   loadingWrap: {
     flex: 1,
@@ -239,7 +244,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    color: "#6B7280",
+    color: colors.textSecondary,
     fontSize: 14,
   },
   emptyContainer: {
@@ -252,13 +257,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: "#6B7280",
+    color: colors.textSecondary,
     textAlign: "center",
     marginBottom: 24,
   },
@@ -272,22 +277,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   addExpenseBtnText: {
-    color: "#fff",
+    color: colors.white,
     fontWeight: "600",
     fontSize: 16,
   },
   headerInfo: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: colors.borderLight,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
   },
   totalExpenses: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#111827",
+    color: colors.text,
     marginBottom: 4,
   },
   totalAmount: {
@@ -296,15 +301,15 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     overflow: "hidden",
   },
   divider: {
     height: 1,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.borderLight,
     marginHorizontal: 16,
   },
 });
