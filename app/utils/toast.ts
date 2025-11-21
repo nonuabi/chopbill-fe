@@ -77,6 +77,7 @@ export const getSuccessMessage = (action: string): string => {
     update_profile: "Profile updated successfully! 👤",
     accept_invite: "You've joined the group! 🎊",
     share_invite: "Invite link copied! Share it with your friends 📤",
+    settle_up: "Settled up successfully! ✅",
   };
   return messages[action] || "Operation completed successfully! ✅";
 };

@@ -87,6 +87,10 @@ export default function TabsLayout() {
         name="groups/[id]"
         options={{ href: null, headerShown: false }}
       />
+      <Tabs.Screen
+        name="groups/[id]/settle-up"
+        options={{ href: null, headerShown: false }}
+      />
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
     </Tabs>
   );

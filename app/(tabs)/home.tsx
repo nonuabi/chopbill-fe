@@ -163,7 +163,10 @@ export default function HomeScreen() {
     recent_expenses: [],
   };
 
-  const netBalance = data.total_owed_to_me - data.total_i_owe;
+  // Ensure values are numbers (handle undefined/null from API)
+  const totalOwedToMe = Number(data.total_owed_to_me) || 0;
+  const totalIOwe = Number(data.total_i_owe) || 0;
+  const netBalance = totalOwedToMe - totalIOwe;
 
   return (
     <SafeAreaProvider>
@@ -241,7 +244,7 @@ export default function HomeScreen() {
                 <View style={styles.statCardText}>
                   <Text style={styles.cardTitle}>You are owed</Text>
                   <Text style={styles.owedCardValue}>
-                    ₹{data.total_owed_to_me.toFixed(2)}
+                    ₹{totalOwedToMe.toFixed(2)}
                   </Text>
                 </View>
               </View>
@@ -261,7 +264,7 @@ export default function HomeScreen() {
                 <View style={styles.statCardText}>
                   <Text style={styles.cardTitle}>You owe</Text>
                   <Text style={styles.oweCardValue}>
-                    ₹{data.total_i_owe.toFixed(2)}
+                    ₹{totalIOwe.toFixed(2)}
                   </Text>
                 </View>
               </View>

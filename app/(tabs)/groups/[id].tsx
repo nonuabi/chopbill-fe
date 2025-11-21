@@ -48,6 +48,30 @@ type Expense = {
   notes?: string;
   split_count: number;
 };
+type Settlement = {
+  id: number;
+  payer: {
+    id: number;
+    name: string;
+    email?: string;
+    phone_number?: string;
+    avatar_url?: string;
+  };
+  payee: {
+    id: number;
+    name: string;
+    email?: string;
+    phone_number?: string;
+    avatar_url?: string;
+  };
+  amount: number;
+  notes?: string;
+  settled_by: {
+    id: number;
+    name: string;
+  };
+  created_at: string;
+};
 type MemberBalance = {
   user: {
     id?: string | number;
@@ -70,6 +94,7 @@ type Group = {
   members?: GroupMember[];
   member_balances?: MemberBalance[];
   recent_expenses?: Expense[];
+  recent_settlements?: Settlement[];
   created_at?: string;
 };
 
@@ -230,6 +255,7 @@ export default function GroupDetailsScreen() {
   const bal = group?.balance_for_me ?? 0;
   const memberBalances = group?.member_balances || [];
   const recentExpenses = group?.recent_expenses || [];
+  const recentSettlements = group?.recent_settlements || [];
   const hasExpenses = recentExpenses.length > 0 || total > 0;
 
   // Filter members who owe you or you owe
@@ -385,7 +411,7 @@ export default function GroupDetailsScreen() {
                           avatarUrl={mb.user.avatar_url}
                           userId={mb.user.id}
                           onPress={() => {
-                            // Could navigate to settle up or member details
+                            router.push(`/(tabs)/groups/${id}/settle-up`);
                           }}
                         />
                       ))}
@@ -443,6 +469,33 @@ export default function GroupDetailsScreen() {
                           }}
                         />
                       ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* Settlement History */}
+                {recentSettlements.length > 0 && (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Settlement History</Text>
+                    <View style={styles.card}>
+                      {recentSettlements.slice(0, 5).map((settlement, idx) => {
+                        const payerName = settlement.payer.name || settlement.payer.email || settlement.payer.phone_number || "User";
+                        const payeeName = settlement.payee.name || settlement.payee.email || settlement.payee.phone_number || "User";
+                        const subtitle = `${payerName} paid ${payeeName} • ${formatDate(settlement.created_at)}`;
+                        
+                        return (
+                          <ListCard
+                            key={settlement.id || idx}
+                            variant="expense"
+                            name={`Settled up ₹${settlement.amount.toFixed(2)}`}
+                            amount={settlement.amount}
+                            subtitle={subtitle}
+                            onPress={() => {
+                              // Could show settlement details
+                            }}
+                          />
+                        );
+                      })}
                     </View>
                   </View>
                 )}
@@ -507,7 +560,7 @@ export default function GroupDetailsScreen() {
                   <Pressable
                     style={[styles.actionBtn, styles.actionBtnSecondary]}
                     onPress={() => {
-                      showToast("Settle Up feature coming soon! 🚀", "info");
+                      router.push(`/(tabs)/groups/${id}/settle-up`);
                     }}
                   >
                     <Text style={styles.actionBtnSecondaryText}>
