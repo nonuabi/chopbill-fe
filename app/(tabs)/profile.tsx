@@ -59,6 +59,7 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [personalInviteUrl, setPersonalInviteUrl] = useState<string>("");
   const [sharingInvite, setSharingInvite] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const openEdit = () => {
     setName(user?.name || "");
     setEmail(user?.email || "");
@@ -108,6 +109,38 @@ export default function ProfileScreen() {
       console.error("Logout error:", e);
       // authLogout handles errors internally, but show user-friendly message
       showToast("Could not log out. Please try again.", "error");
+    }
+  };
+
+  const deleteAccount = async () => {
+    try {
+      setDeletingAccount(true);
+      const res = await authenticatedFetch(`${API_BASE}/api/me`, {
+        method: "DELETE",
+      });
+
+      if (!res) {
+        // Auth error already handled
+        return;
+      }
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        const errorMsg = errorData?.message || errorData?.error || "Failed to delete account";
+        throw new Error(errorMsg);
+      }
+
+      // Account deleted successfully, logout and redirect to login
+      await authLogout();
+      showToast("Your account has been deleted successfully.", "success", 3000);
+      setTimeout(() => {
+        router.replace("/(auth)/LoginScreen");
+      }, 1000);
+    } catch (e: any) {
+      console.error("Delete account error:", e);
+      showToast(e?.message || "Could not delete account. Please try again.", "error", 4000);
+    } finally {
+      setDeletingAccount(false);
     }
   };
 
@@ -655,6 +688,50 @@ export default function ProfileScreen() {
               <Text style={styles.signOutText}>Sign Out</Text>
             </Pressable>
           </View>
+
+          {/* Delete Account */}
+          <View style={styles.section}>
+            <Pressable 
+              style={[styles.deleteAccountCard, deletingAccount && { opacity: 0.7 }]}
+              onPress={() => {
+                Alert.alert(
+                  "Delete Account",
+                  "Are you sure you want to delete your account? This action cannot be undone. You cannot delete your account if you own any groups.",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    { 
+                      text: "Delete Account", 
+                      style: "destructive", 
+                      onPress: () => {
+                        Alert.alert(
+                          "Final Confirmation",
+                          "This will permanently delete your account and all associated data. This action cannot be undone. Are you absolutely sure?",
+                          [
+                            { text: "Cancel", style: "cancel" },
+                            { 
+                              text: "Yes, Delete My Account", 
+                              style: "destructive", 
+                              onPress: deleteAccount 
+                            },
+                          ]
+                        );
+                      }
+                    },
+                  ]
+                );
+              }}
+              disabled={deletingAccount}
+            >
+              {deletingAccount ? (
+                <ActivityIndicator size="small" color={colors.danger} />
+              ) : (
+                <Feather name="trash-2" size={20} color={colors.danger} />
+              )}
+              <Text style={styles.deleteAccountText}>
+                {deletingAccount ? "Deleting Account..." : "Delete Account"}
+              </Text>
+            </Pressable>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>
@@ -830,6 +907,22 @@ const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => Sty
     gap: 8,
   },
   signOutText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.danger,
+  },
+  deleteAccountCard: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: isDark ? "#7F1D1D" : "#FEE2E2",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  deleteAccountText: {
     fontSize: 16,
     fontWeight: "600",
     color: colors.danger,
