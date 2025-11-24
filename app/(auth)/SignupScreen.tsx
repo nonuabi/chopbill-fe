@@ -249,9 +249,22 @@ export default function SignupScreen() {
               )}
             </View>
 
+            {/* Contact Information Section */}
+            <View style={styles.contactSection}>
+              <Text style={styles.label}>
+                Contact Information <Text style={styles.required}>*</Text>
+              </Text>
+              <View style={styles.helperTextContainer}>
+                <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
+                <Text style={styles.helperText}>
+                  Provide at least one: email or phone number
+                </Text>
+              </View>
+            </View>
+
             <View style={styles.inputGroup}>
               <Text style={styles.label}>
-                Email <Text style={styles.optional}> (or phone)</Text>
+                Email <Text style={styles.optional}>(Optional)</Text>
               </Text>
               <View style={styles.inputWrapper}>
                 <Ionicons 
@@ -297,7 +310,7 @@ export default function SignupScreen() {
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>
-                Phone Number <Text style={styles.optional}> (or email)</Text>
+                Phone Number <Text style={styles.optional}>(Optional)</Text>
               </Text>
               <View style={styles.inputWrapper}>
                 <Ionicons 
@@ -338,14 +351,6 @@ export default function SignupScreen() {
                 <View style={styles.errorContainer}>
                   <Ionicons name="alert-circle" size={14} color={colors.danger} />
                   <Text style={styles.error}>{errors.contact}</Text>
-                </View>
-              )}
-              {(!email.trim() && !phoneNumber.trim()) && !shouldShowError("contact") && (
-                <View style={styles.hintContainer}>
-                  <Ionicons name="information-circle" size={14} color={colors.textSecondary} />
-                  <Text style={styles.hint}>
-                    Please provide either email or phone number (10-digit Indian number or international format)
-                  </Text>
                 </View>
               )}
               {phoneNumber.trim() && !shouldShowError("phoneNumber") && isPhoneNumber(phoneNumber) && (
@@ -529,6 +534,9 @@ const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => Sty
     shadowRadius: 8,
     elevation: 2,
   },
+  contactSection: {
+    marginBottom: 8,
+  },
   inputGroup: {
     marginBottom: 20,
   },
@@ -547,6 +555,21 @@ const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => Sty
     fontSize: 13,
     color: colors.textSecondary,
     fontWeight: "400",
+  },
+  helperTextContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.borderLight,
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 0,
+  },
+  helperText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginLeft: 8,
+    flex: 1,
+    lineHeight: 18,
   },
   inputWrapper: {
     flexDirection: "row",

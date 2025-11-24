@@ -84,12 +84,17 @@ export default function AllBalancesScreen() {
 
   const MySeparator = () => <View style={{ height: 10 }} />;
 
-  const totalOwedToMe = balances
-    .filter((b) => b.direction === "+")
-    .reduce((sum, b) => sum + b.amount, 0);
-  const totalIOwe = balances
-    .filter((b) => b.direction === "-")
-    .reduce((sum, b) => sum + b.amount, 0);
+  // Safely calculate totals with fallbacks
+  const totalOwedToMe = Array.isArray(balances)
+    ? balances
+        .filter((b) => b && b.direction === "+" && typeof b.amount === "number")
+        .reduce((sum, b) => sum + (b.amount || 0), 0)
+    : 0;
+  const totalIOwe = Array.isArray(balances)
+    ? balances
+        .filter((b) => b && b.direction === "-" && typeof b.amount === "number")
+        .reduce((sum, b) => sum + (b.amount || 0), 0)
+    : 0;
 
   if (loading) {
     return (

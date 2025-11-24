@@ -500,7 +500,7 @@ export default function ProfileScreen() {
           {/* Actions Section */}
           <View style={styles.section}>
             <Pressable 
-              style={styles.actionCard}
+              style={[styles.actionCard, styles.actionCardWithSpacing]}
               onPress={openEdit}
             >
               <View style={styles.actionLeft}>
@@ -517,7 +517,7 @@ export default function ProfileScreen() {
 
             {/* Invite Friends */}
             <Pressable 
-              style={styles.actionCard}
+              style={[styles.actionCard, styles.actionCardWithSpacing]}
               onPress={sharePersonalInvite}
               disabled={sharingInvite}
             >
@@ -689,10 +689,10 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
 
-          {/* Delete Account */}
-          <View style={styles.section}>
+          {/* Delete Account - Less prominent */}
+          <View style={styles.deleteAccountSection}>
             <Pressable 
-              style={[styles.deleteAccountCard, deletingAccount && { opacity: 0.7 }]}
+              style={[styles.deleteAccountButton, deletingAccount && { opacity: 0.7 }]}
               onPress={() => {
                 Alert.alert(
                   "Delete Account",
@@ -723,12 +723,12 @@ export default function ProfileScreen() {
               disabled={deletingAccount}
             >
               {deletingAccount ? (
-                <ActivityIndicator size="small" color={colors.danger} />
+                <ActivityIndicator size="small" color={colors.textTertiary} />
               ) : (
-                <Feather name="trash-2" size={20} color={colors.danger} />
+                <Feather name="trash-2" size={14} color={colors.textTertiary} />
               )}
-              <Text style={styles.deleteAccountText}>
-                {deletingAccount ? "Deleting Account..." : "Delete Account"}
+              <Text style={styles.deleteAccountButtonText}>
+                {deletingAccount ? "Deleting..." : "Delete Account"}
               </Text>
             </Pressable>
           </View>
@@ -872,6 +872,9 @@ const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => Sty
     justifyContent: "space-between",
     alignItems: "center",
   },
+  actionCardWithSpacing: {
+    marginBottom: 12,
+  },
   actionLeft: {
     flexDirection: "row",
     alignItems: "center",
@@ -911,21 +914,23 @@ const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => Sty
     fontWeight: "600",
     color: colors.danger,
   },
-  deleteAccountCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: isDark ? "#7F1D1D" : "#FEE2E2",
+  deleteAccountSection: {
+    marginTop: 8,
+    marginBottom: 32,
+    alignItems: "center",
+  },
+  deleteAccountButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
-  deleteAccountText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.danger,
+  deleteAccountButtonText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: colors.textTertiary,
   },
   title: { fontSize: 20, fontWeight: "600" },
   muted: { opacity: 0.7 },
