@@ -456,18 +456,25 @@ export default function GroupDetailsScreen() {
                         <Text style={styles.seeAllText}>See all</Text>
                       </Pressable>
                     </View>
-                    <View style={styles.card}>
+                    <View style={styles.cardsContainer}>
                       {recentExpenses.slice(0, 5).map((expense, idx) => (
-                        <ListCard
-                          key={expense.id || idx}
-                          variant="expense"
-                          name={expense.description}
-                          amount={expense.amount}
-                          subtitle={`Paid by ${expense.paid_by.name} • ${formatDate(expense.created_at)}`}
-                          onPress={() => {
-                            // Could navigate to expense details
-                          }}
-                        />
+                        <View 
+                          key={expense.id || idx} 
+                          style={[
+                            styles.cardWrapper,
+                            idx < recentExpenses.slice(0, 5).length - 1 && styles.cardWrapperSpacing
+                          ]}
+                        >
+                          <ListCard
+                            variant="expense"
+                            name={expense.description}
+                            amount={expense.amount}
+                            subtitle={`Paid by ${expense.paid_by.name} • ${formatDate(expense.created_at)}`}
+                            onPress={() => {
+                              // Could navigate to expense details
+                            }}
+                          />
+                        </View>
                       ))}
                     </View>
                   </View>
@@ -477,23 +484,30 @@ export default function GroupDetailsScreen() {
                 {recentSettlements.length > 0 && (
                   <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Settlement History</Text>
-                    <View style={styles.card}>
+                    <View style={styles.cardsContainer}>
                       {recentSettlements.slice(0, 5).map((settlement, idx) => {
                         const payerName = settlement.payer.name || settlement.payer.email || settlement.payer.phone_number || "User";
                         const payeeName = settlement.payee.name || settlement.payee.email || settlement.payee.phone_number || "User";
                         const subtitle = `${payerName} paid ${payeeName} • ${formatDate(settlement.created_at)}`;
                         
                         return (
-                          <ListCard
-                            key={settlement.id || idx}
-                            variant="expense"
-                            name={`Settled up ₹${settlement.amount.toFixed(2)}`}
-                            amount={settlement.amount}
-                            subtitle={subtitle}
-                            onPress={() => {
-                              // Could show settlement details
-                            }}
-                          />
+                          <View 
+                            key={settlement.id || idx} 
+                            style={[
+                              styles.cardWrapper,
+                              idx < recentSettlements.slice(0, 5).length - 1 && styles.cardWrapperSpacing
+                            ]}
+                          >
+                            <ListCard
+                              variant="expense"
+                              name={`Settled up ₹${settlement.amount.toFixed(2)}`}
+                              amount={settlement.amount}
+                              subtitle={subtitle}
+                              onPress={() => {
+                                // Could show settlement details
+                              }}
+                            />
+                          </View>
                         );
                       })}
                     </View>
@@ -712,6 +726,15 @@ const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => Sty
     borderWidth: 1,
     borderColor: colors.border,
     overflow: "hidden",
+  },
+  cardsContainer: {
+    // Container for cards with spacing
+  },
+  cardWrapper: {
+    // Wrapper for individual cards
+  },
+  cardWrapperSpacing: {
+    marginBottom: 12,
   },
   memberRow: {
     flexDirection: "row",

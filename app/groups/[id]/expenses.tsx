@@ -188,9 +188,15 @@ export default function GroupExpensesScreen() {
               </View>
 
               {/* Expenses List */}
-              <View style={styles.card}>
+              <View style={styles.cardsContainer}>
                 {expenses.map((item, idx) => (
-                  <View key={item.id}>
+                  <View 
+                    key={item.id}
+                    style={[
+                      styles.cardWrapper,
+                      idx < expenses.length - 1 && styles.cardWrapperSpacing
+                    ]}
+                  >
                     <ListCard
                       variant="expense"
                       name={item.description}
@@ -200,7 +206,6 @@ export default function GroupExpensesScreen() {
                         // Could navigate to expense details in the future
                       }}
                     />
-                    {idx < expenses.length - 1 && <View style={styles.divider} />}
                   </View>
                 ))}
               </View>
@@ -306,6 +311,15 @@ const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => Sty
     borderWidth: 1,
     borderColor: colors.border,
     overflow: "hidden",
+  },
+  cardsContainer: {
+    // Container for cards with spacing
+  },
+  cardWrapper: {
+    // Wrapper for individual cards
+  },
+  cardWrapperSpacing: {
+    marginBottom: 12,
   },
   divider: {
     height: 1,
