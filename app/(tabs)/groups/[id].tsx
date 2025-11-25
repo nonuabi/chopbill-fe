@@ -399,21 +399,28 @@ export default function GroupDetailsScreen() {
                     <Text style={styles.sectionTitle}>
                       Who will pay you
                     </Text>
-                    <View style={styles.card}>
+                    <View style={styles.cardsContainer}>
                       {membersWhoOweYou.map((mb, idx) => (
-                        <ListCard
+                        <View 
                           key={mb.user.id || mb.user.email || mb.user.phone_number || idx}
-                          variant="balance"
-                          name={mb.user.name || mb.user.email || mb.user.phone_number || "User"}
-                          amount={mb.owes_you}
-                          direction="+"
-                          email={mb.user.email || mb.user.phone_number}
-                          avatarUrl={mb.user.avatar_url}
-                          userId={mb.user.id}
-                          onPress={() => {
-                            router.push(`/(tabs)/groups/${id}/settle-up`);
-                          }}
-                        />
+                          style={[
+                            styles.cardWrapper,
+                            idx < membersWhoOweYou.length - 1 && styles.cardWrapperSpacing
+                          ]}
+                        >
+                          <ListCard
+                            variant="balance"
+                            name={mb.user.name || mb.user.email || mb.user.phone_number || "User"}
+                            amount={mb.owes_you}
+                            direction="+"
+                            email={mb.user.email || mb.user.phone_number}
+                            avatarUrl={mb.user.avatar_url}
+                            userId={mb.user.id}
+                            onPress={() => {
+                              router.push(`/(tabs)/groups/${id}/settle-up`);
+                            }}
+                          />
+                        </View>
                       ))}
                     </View>
                   </View>
@@ -423,21 +430,28 @@ export default function GroupDetailsScreen() {
                 {membersYouOwe.length > 0 && (
                   <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Who you need to pay</Text>
-                    <View style={styles.card}>
+                    <View style={styles.cardsContainer}>
                       {membersYouOwe.map((mb, idx) => (
-                        <ListCard
+                        <View 
                           key={mb.user.id || mb.user.email || mb.user.phone_number || idx}
-                          variant="balance"
-                          name={mb.user.name || mb.user.email || mb.user.phone_number || "User"}
-                          amount={mb.you_owe}
-                          direction="-"
-                          email={mb.user.email || mb.user.phone_number}
-                          avatarUrl={mb.user.avatar_url}
-                          userId={mb.user.id}
-                          onPress={() => {
-                            // Could navigate to settle up
-                          }}
-                        />
+                          style={[
+                            styles.cardWrapper,
+                            idx < membersYouOwe.length - 1 && styles.cardWrapperSpacing
+                          ]}
+                        >
+                          <ListCard
+                            variant="balance"
+                            name={mb.user.name || mb.user.email || mb.user.phone_number || "User"}
+                            amount={mb.you_owe}
+                            direction="-"
+                            email={mb.user.email || mb.user.phone_number}
+                            avatarUrl={mb.user.avatar_url}
+                            userId={mb.user.id}
+                            onPress={() => {
+                              // Could navigate to settle up
+                            }}
+                          />
+                        </View>
                       ))}
                     </View>
                   </View>

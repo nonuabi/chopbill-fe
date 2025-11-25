@@ -195,9 +195,13 @@ export default function SettleUpScreen() {
       // Refresh group details
       await fetchGroupDetails();
       
-      // Navigate back after a short delay
+      // Navigate back to group details screen after a short delay
       setTimeout(() => {
-        router.back();
+        if (id) {
+          router.push(`/(tabs)/groups/${id}`);
+        } else {
+          router.back();
+        }
       }, 1000);
     } catch (e: any) {
       console.error("Settle up error:", e);
@@ -235,7 +239,13 @@ export default function SettleUpScreen() {
             {/* Header */}
             <View style={styles.headerRow}>
               <Pressable
-                onPress={() => router.back()}
+                onPress={() => {
+                  if (id) {
+                    router.push(`/(tabs)/groups/${id}`);
+                  } else {
+                    router.back();
+                  }
+                }}
                 hitSlop={8}
                 style={styles.backBtn}
               >
@@ -263,19 +273,26 @@ export default function SettleUpScreen() {
                     <Text style={styles.sectionTitle}>
                       Who will pay you
                     </Text>
-                    <View style={styles.card}>
+                    <View style={styles.cardsContainer}>
                       {membersWhoOweYou.map((mb, idx) => (
-                        <ListCard
+                        <View 
                           key={mb.user.id || mb.user.email || mb.user.phone_number || idx}
-                          variant="balance"
-                          name={mb.user.name || mb.user.email || mb.user.phone_number || "User"}
-                          amount={mb.owes_you}
-                          direction="+"
-                          email={mb.user.email || mb.user.phone_number}
-                          avatarUrl={mb.user.avatar_url}
-                          userId={mb.user.id}
-                          onPress={() => openSettleModal(mb, true)}
-                        />
+                          style={[
+                            styles.cardWrapper,
+                            idx < membersWhoOweYou.length - 1 && styles.cardWrapperSpacing
+                          ]}
+                        >
+                          <ListCard
+                            variant="balance"
+                            name={mb.user.name || mb.user.email || mb.user.phone_number || "User"}
+                            amount={mb.owes_you}
+                            direction="+"
+                            email={mb.user.email || mb.user.phone_number}
+                            avatarUrl={mb.user.avatar_url}
+                            userId={mb.user.id}
+                            onPress={() => openSettleModal(mb, true)}
+                          />
+                        </View>
                       ))}
                     </View>
                   </View>
@@ -285,19 +302,26 @@ export default function SettleUpScreen() {
                 {membersYouOwe.length > 0 && (
                   <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Who you need to pay</Text>
-                    <View style={styles.card}>
+                    <View style={styles.cardsContainer}>
                       {membersYouOwe.map((mb, idx) => (
-                        <ListCard
+                        <View 
                           key={mb.user.id || mb.user.email || mb.user.phone_number || idx}
-                          variant="balance"
-                          name={mb.user.name || mb.user.email || mb.user.phone_number || "User"}
-                          amount={mb.you_owe}
-                          direction="-"
-                          email={mb.user.email || mb.user.phone_number}
-                          avatarUrl={mb.user.avatar_url}
-                          userId={mb.user.id}
-                          onPress={() => openSettleModal(mb, false)}
-                        />
+                          style={[
+                            styles.cardWrapper,
+                            idx < membersYouOwe.length - 1 && styles.cardWrapperSpacing
+                          ]}
+                        >
+                          <ListCard
+                            variant="balance"
+                            name={mb.user.name || mb.user.email || mb.user.phone_number || "User"}
+                            amount={mb.you_owe}
+                            direction="-"
+                            email={mb.user.email || mb.user.phone_number}
+                            avatarUrl={mb.user.avatar_url}
+                            userId={mb.user.id}
+                            onPress={() => openSettleModal(mb, false)}
+                          />
+                        </View>
                       ))}
                     </View>
                   </View>
@@ -498,6 +522,15 @@ const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) =>
       borderWidth: 1,
       borderColor: colors.border,
       overflow: "hidden",
+    },
+    cardsContainer: {
+      // Container for cards with spacing
+    },
+    cardWrapper: {
+      // Wrapper for individual cards
+    },
+    cardWrapperSpacing: {
+      marginBottom: 12,
     },
     modalOverlay: {
       flex: 1,
