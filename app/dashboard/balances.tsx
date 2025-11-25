@@ -144,7 +144,7 @@ export default function AllBalancesScreen() {
                   <View style={styles.summaryCardContent}>
                     <Ionicons name="arrow-up" size={24} color={colors.green} />
                     <View style={styles.summaryCardText}>
-                      <Text style={styles.summaryLabel}>You are owed</Text>
+                      <Text style={styles.summaryLabel}>You will receive</Text>
                       <Text style={styles.summaryAmountGreen}>
                         ₹{totalOwedToMe.toFixed(2)}
                       </Text>
@@ -157,7 +157,7 @@ export default function AllBalancesScreen() {
                   <View style={styles.summaryCardContent}>
                     <Ionicons name="arrow-down" size={24} color={colors.danger} />
                     <View style={styles.summaryCardText}>
-                      <Text style={styles.summaryLabel}>You owe</Text>
+                      <Text style={styles.summaryLabel}>You need to pay</Text>
                       <Text style={styles.summaryAmountRed}>
                         ₹{totalIOwe.toFixed(2)}
                       </Text>

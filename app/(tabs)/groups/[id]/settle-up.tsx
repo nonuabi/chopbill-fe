@@ -124,8 +124,8 @@ export default function SettleUpScreen() {
     }
 
     // Determine payer and payee
-    // If member owes you, they are payer and you are payee
-    // If you owe member, you are payer and they are payee
+    // If member will pay you, they are payer and you are payee
+    // If you need to pay member, you are payer and they are payee
     const owesYou = Number(selectedMember.owes_you) || 0;
     const youOwe = Number(selectedMember.you_owe) || 0;
     const isOwingYou = owesYou > 0;
@@ -257,11 +257,11 @@ export default function SettleUpScreen() {
               </View>
             ) : (
               <>
-                {/* Members Who Owe You */}
+                {/* Members Who Will Pay You */}
                 {membersWhoOweYou.length > 0 && (
                   <View style={styles.section}>
                     <Text style={styles.sectionTitle}>
-                      Members who owe you
+                      Who will pay you
                     </Text>
                     <View style={styles.card}>
                       {membersWhoOweYou.map((mb, idx) => (
@@ -281,10 +281,10 @@ export default function SettleUpScreen() {
                   </View>
                 )}
 
-                {/* Members You Owe */}
+                {/* Members You Need To Pay */}
                 {membersYouOwe.length > 0 && (
                   <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>You owe</Text>
+                    <Text style={styles.sectionTitle}>Who you need to pay</Text>
                     <View style={styles.card}>
                       {membersYouOwe.map((mb, idx) => (
                         <ListCard
@@ -345,8 +345,8 @@ export default function SettleUpScreen() {
                     </Text>
                     <Text style={styles.balanceInfo}>
                       {(Number(selectedMember.owes_you) || 0) > 0
-                        ? `Owes you ₹${(Number(selectedMember.owes_you) || 0).toFixed(2)}`
-                        : `You owe ₹${(Number(selectedMember.you_owe) || 0).toFixed(2)}`}
+                        ? `Will pay you ₹${(Number(selectedMember.owes_you) || 0).toFixed(2)}`
+                        : `You need to pay ₹${(Number(selectedMember.you_owe) || 0).toFixed(2)}`}
                     </Text>
                   </View>
 

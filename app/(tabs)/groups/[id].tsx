@@ -258,7 +258,7 @@ export default function GroupDetailsScreen() {
   const recentSettlements = group?.recent_settlements || [];
   const hasExpenses = recentExpenses.length > 0 || total > 0;
 
-  // Filter members who owe you or you owe
+  // Filter members who will pay you or you need to pay
   const membersWhoOweYou = memberBalances.filter((mb) => mb.owes_you > 0);
   const membersYouOwe = memberBalances.filter((mb) => mb.you_owe > 0);
   
@@ -362,9 +362,9 @@ export default function GroupDetailsScreen() {
                   </Text>
                   <Text style={styles.balanceSubtext}>
                     {bal > 0
-                      ? "You are owed"
+                      ? "You will receive"
                       : bal < 0
-                        ? "You owe"
+                        ? "You need to pay"
                         : hasExpenses
                           ? "All settled up"
                           : "No expenses yet"}
@@ -393,11 +393,11 @@ export default function GroupDetailsScreen() {
                   </View>
                 </View>
 
-                {/* Members Who Owe You */}
+                {/* Members Who Will Pay You */}
                 {membersWhoOweYou.length > 0 && (
                   <View style={styles.section}>
                     <Text style={styles.sectionTitle}>
-                      Members who owe you
+                      Who will pay you
                     </Text>
                     <View style={styles.card}>
                       {membersWhoOweYou.map((mb, idx) => (
@@ -419,10 +419,10 @@ export default function GroupDetailsScreen() {
                   </View>
                 )}
 
-                {/* Members You Owe */}
+                {/* Members You Need To Pay */}
                 {membersYouOwe.length > 0 && (
                   <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>You owe</Text>
+                    <Text style={styles.sectionTitle}>Who you need to pay</Text>
                     <View style={styles.card}>
                       {membersYouOwe.map((mb, idx) => (
                         <ListCard

@@ -35,7 +35,7 @@ interface ListCardProps {
   variant: ListCardVariant;
   name: string;
   amount: number | string;
-  /** For `balance` variant, "+" means they owe you, "-" means you owe */
+  /** For `balance` variant, "+" means they will pay you, "-" means you need to pay */
   direction?: "+" | "-";
   /** For `expense` variant, small muted line under the title */
   subtitle?: string;
@@ -124,7 +124,7 @@ const ListCard: React.FC<ListCardProps> = ({
         </Text>
         {variant === "balance" && (
           <Text style={styles.metaText} numberOfLines={1}>
-            {isPositive ? "owes you" : "you owe"}
+            {isPositive ? "will pay you" : "you need to pay"}
           </Text>
         )}
       </View>

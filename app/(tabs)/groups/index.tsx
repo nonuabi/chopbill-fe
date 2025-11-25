@@ -106,7 +106,7 @@ export default function GroupsScreen() {
       description?: string;
       member_count: number;
       totalAmount?: number; // sum of expenses in this group
-      balanceForMe?: number; // +ve: others owe you; -ve: you owe
+      balanceForMe?: number; // +ve: others will pay you; -ve: you need to pay
       expense_count?: number;
       last_expense_date?: string;
       member_avatars?: Array<{
@@ -498,7 +498,7 @@ export default function GroupsScreen() {
                                 {isPositive ? "+" : "-"}{formatCurrency(bal)}
                               </Text>
                               <Text style={styles.balanceLabel}>
-                                {isPositive ? "owed to you" : "you owe"}
+                                {isPositive ? "will pay you" : "you need to pay"}
                               </Text>
                             </>
                           ) : (

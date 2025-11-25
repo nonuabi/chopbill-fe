@@ -210,7 +210,7 @@ export default function HomeScreen() {
                 />
                 <View style={styles.netBalanceText}>
                   <Text style={styles.netBalanceLabel}>
-                    {netBalance > 0 ? "Net you're owed" : "Net you owe"}
+                    {netBalance > 0 ? "Net you'll receive" : "Net you need to pay"}
                   </Text>
                   <Text
                     style={[
@@ -242,7 +242,7 @@ export default function HomeScreen() {
                   <FontAwesome name="arrow-up" size={18} color={colors.green} />
                 </View>
                 <View style={styles.statCardText}>
-                  <Text style={styles.cardTitle}>You are owed</Text>
+                  <Text style={styles.cardTitle}>You will receive</Text>
                   <Text style={styles.owedCardValue}>
                     ₹{totalOwedToMe.toFixed(2)}
                   </Text>
@@ -262,7 +262,7 @@ export default function HomeScreen() {
                   <FontAwesome name="arrow-down" size={18} color={colors.danger} />
                 </View>
                 <View style={styles.statCardText}>
-                  <Text style={styles.cardTitle}>You owe</Text>
+                  <Text style={styles.cardTitle}>You need to pay</Text>
                   <Text style={styles.oweCardValue}>
                     ₹{totalIOwe.toFixed(2)}
                   </Text>
