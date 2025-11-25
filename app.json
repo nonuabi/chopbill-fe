@@ -2,7 +2,7 @@
   "expo": {
     "name": "ChopBill",
     "slug": "chopbill-fe",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/expo-new-icon.png",
     "scheme": "chopbillfe",
@@ -14,7 +14,7 @@
     },
     "android": {
       "package": "com.dumbledore.chopbillfe",
-      "versionCode": 4,
+      "versionCode": 6,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

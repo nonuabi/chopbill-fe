@@ -19,7 +19,8 @@ import { getColors } from "../styles/colors";
 import { getCommonStyles } from "../styles/common";
 import { useToast } from "../contexts/ToastContext";
 import { extractErrorMessage } from "../utils/toast";
-import { API_BASE, TOKEN_KEY } from "../utils/auth";
+import { API_BASE, TOKEN_KEY, buildAuthHeader } from "../utils/auth";
+import EmailVerificationScreen from "../components/EmailVerificationScreen";
 
 // Enhanced email validation
 const isEmail = (v: string) => {
@@ -88,6 +89,9 @@ export default function SignupScreen() {
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [signupToken, setSignupToken] = useState<string>("");
+  const [signupEmail, setSignupEmail] = useState<string>("");
 
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
@@ -177,14 +181,52 @@ export default function SignupScreen() {
       if (storedToken !== tokenString) {
         throw new Error("Failed to store authentication token. Please try again.");
       }
-      showToast("Account created successfully! 🎉", "success", 2000);
-      setTimeout(() => router.replace("/(tabs)/home"), 500);
+
+      const userEmail = email.trim().toLowerCase();
+      
+      // If email is provided, show verification screen (code was already sent by backend)
+      if (userEmail) {
+        setSignupToken(tokenString);
+        setSignupEmail(userEmail);
+        setShowVerification(true);
+        showToast("Verification code sent to your email! 📧", "success");
+      } else {
+        // No email provided, proceed directly to home
+        showToast("Account created successfully! 🎉", "success", 2000);
+        setTimeout(() => router.replace("/(tabs)/home"), 500);
+      }
     } catch (e: any) {
       showToast(e?.message || "Sign up failed. Please check your information and try again.", "error", 4000);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleVerificationComplete = () => {
+    showToast("Email verified successfully! 🎉", "success", 2000);
+    setTimeout(() => router.replace("/(tabs)/home"), 500);
+  };
+
+  const handleSkipVerification = () => {
+    showToast("You can verify your email later in settings", "info");
+    setTimeout(() => router.replace("/(tabs)/home"), 500);
+  };
+
+  // Show verification screen if needed
+  if (showVerification) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={[common.safeViewContainer]}>
+          <EmailVerificationScreen
+            email={signupEmail}
+            token={signupToken}
+            onVerified={handleVerificationComplete}
+            onSkip={handleSkipVerification}
+          />
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>
