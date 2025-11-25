@@ -7,6 +7,9 @@ import {
   Pressable,
   ActivityIndicator,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -175,8 +178,18 @@ export default function EmailVerificationScreen({
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.container}>
+          <View style={styles.content}>
         {/* Icon */}
         <View style={styles.iconContainer}>
           <View style={styles.iconCircle}>
@@ -297,8 +310,10 @@ export default function EmailVerificationScreen({
             <Text style={styles.skipText}>Skip for now</Text>
           </Pressable>
         )}
-      </View>
-    </View>
+          </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -307,6 +322,10 @@ const getStyles = (
   isDark: boolean
 ) =>
   StyleSheet.create({
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: 40,
+    },
     container: {
       flex: 1,
       backgroundColor: colors.background,
