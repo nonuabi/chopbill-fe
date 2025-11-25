@@ -1,4 +1,5 @@
 import Feather from "@expo/vector-icons/Feather";
+import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -624,6 +625,15 @@ export default function GroupsScreen() {
                   />
 
                   <Text style={[styles.label, { marginTop: 8 }]}>Members</Text>
+                  
+                  {/* Helper text */}
+                  <View style={styles.helperContainer}>
+                    <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
+                    <Text style={styles.helperText}>
+                      Search and tap on a user to add them to the group
+                    </Text>
+                  </View>
+
                   {/* Selected member chips */}
                   {selectedMembers.length > 0 && (
                     <View style={styles.chipsWrap}>
@@ -662,20 +672,46 @@ export default function GroupsScreen() {
                   {memberQuery.length > 0 && (
                     <View style={styles.resultsBox}>
                       {emailResults.length > 0 ? (
-                        emailResults.slice(0, 6).map((u) => (
-                          <Pressable
-                            key={u.id}
-                            onPress={() =>
-                              addMemberByEmail(u.email, u.name, u.id, u.phone_number)
-                            }
-                            style={styles.resultRow}
-                          >
-                            <Text style={styles.resultName}>{u.name}</Text>
-                            <Text style={styles.resultEmail}>{u.email || u.phone_number || "No contact"}</Text>
-                          </Pressable>
-                        ))
+                        <>
+                          <View style={styles.resultsHeader}>
+                            <Ionicons name="people-outline" size={16} color={colors.textSecondary} />
+                            <Text style={styles.resultsHeaderText}>
+                              Tap to add ({emailResults.length})
+                            </Text>
+                          </View>
+                          {emailResults.slice(0, 6).map((u) => (
+                            <Pressable
+                              key={u.id}
+                              onPress={() =>
+                                addMemberByEmail(u.email, u.name, u.id, u.phone_number)
+                              }
+                              style={({ pressed }) => [
+                                styles.resultRow,
+                                pressed && styles.resultRowPressed,
+                              ]}
+                            >
+                              <View style={styles.resultRowContent}>
+                                <View style={styles.resultRowLeft}>
+                                  <View style={styles.resultAvatar}>
+                                    <Text style={styles.resultAvatarText}>
+                                      {u.name ? u.name.charAt(0).toUpperCase() : (u.email || u.phone_number || "?").charAt(0).toUpperCase()}
+                                    </Text>
+                                  </View>
+                                  <View style={styles.resultRowText}>
+                                    <Text style={styles.resultName}>{u.name || "User"}</Text>
+                                    <Text style={styles.resultEmail}>{u.email || u.phone_number || "No contact"}</Text>
+                                  </View>
+                                </View>
+                                <View style={styles.addButton}>
+                                  <Ionicons name="add-circle" size={24} color={colors.primary} />
+                                </View>
+                              </View>
+                            </Pressable>
+                          ))}
+                        </>
                       ) : (
                         <View style={styles.resultEmpty}>
+                          <Ionicons name="search-outline" size={32} color={colors.textTertiary} style={{ marginBottom: 8 }} />
                           <Text style={styles.resultEmptyText}>
                             No users found. Only existing ChopBill users can be added to groups.
                           </Text>
@@ -1150,15 +1186,86 @@ const getStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) => Sty
     marginBottom: 12,
     backgroundColor: colors.cardBackground,
   },
-  resultRow: {
-    paddingVertical: 10,
+  helperContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.borderLight,
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+    gap: 8,
+  },
+  helperText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 16,
+  },
+  resultsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
     paddingHorizontal: 12,
+    backgroundColor: colors.borderLight,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: 6,
+  },
+  resultsHeaderText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
+  resultRow: {
     backgroundColor: colors.cardBackground,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
   },
-  resultName: { fontWeight: "600", color: colors.text },
-  resultEmail: { color: colors.textSecondary },
+  resultRowPressed: {
+    backgroundColor: colors.borderLight,
+  },
+  resultRowContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  resultRowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    gap: 12,
+  },
+  resultAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  resultAvatarText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.white,
+  },
+  resultRowText: {
+    flex: 1,
+  },
+  resultName: { 
+    fontWeight: "600", 
+    color: colors.text,
+    fontSize: 15,
+    marginBottom: 2,
+  },
+  resultEmail: { 
+    color: colors.textSecondary,
+    fontSize: 13,
+  },
+  addButton: {
+    padding: 4,
+  },
   resultEmpty: { padding: 12, gap: 10 },
   resultEmptyText: { color: colors.textSecondary, marginBottom: 8 },
   hintText: { 
