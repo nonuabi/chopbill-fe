@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import { Animated, Modal, StyleSheet, Text, View } from "react-native";
 import Feather from "@expo/vector-icons/Feather";
 import { useTheme } from "../contexts/ThemeContext";
 import { getColors } from "../styles/colors";
@@ -70,8 +70,6 @@ export default function Toast({
       onHide();
     });
   };
-
-  if (!visible) return null;
 
   const getIcon = () => {
     switch (type) {
@@ -155,32 +153,46 @@ export default function Toast({
   const colorsConfig = getToastColors();
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          transform: [{ translateY: slideAnim }],
-          opacity: opacityAnim,
-          backgroundColor: colorsConfig.bg,
-          borderColor: colorsConfig.border,
-          shadowOpacity: isDark ? 0.3 : 0.15,
-        },
-      ]}
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={() => {}}
     >
-      <Feather name={getIcon()} size={20} color={colorsConfig.icon} />
-      <Text style={[styles.message, { color: colorsConfig.text }]}>
-        {message}
-      </Text>
-    </Animated.View>
+      <View style={styles.modalContainer} pointerEvents="box-none">
+        <Animated.View
+          style={[
+            styles.container,
+            {
+              transform: [{ translateY: slideAnim }],
+              opacity: opacityAnim,
+              backgroundColor: colorsConfig.bg,
+              borderColor: colorsConfig.border,
+              shadowOpacity: isDark ? 0.3 : 0.15,
+            },
+          ]}
+        >
+          <Feather name={getIcon()} size={20} color={colorsConfig.icon} />
+          <Text style={[styles.message, { color: colorsConfig.text }]}>
+            {message}
+          </Text>
+        </Animated.View>
+      </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  modalContainer: {
+    flex: 1,
+    justifyContent: "flex-start",
+    alignItems: "stretch",
+    paddingTop: 60,
+    paddingHorizontal: 16,
+    pointerEvents: "box-none",
+  },
   container: {
-    position: "absolute",
-    top: 60,
-    left: 16,
-    right: 16,
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 14,
@@ -190,8 +202,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
-    elevation: 8,
-    zIndex: 9999,
+    elevation: 10,
     gap: 12,
   },
   message: {
